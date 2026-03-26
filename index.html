@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<title>Dip-Buying Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{background:#ffffff;color-scheme:light;}
+:root{
+  color-scheme: light;
+  --bg:#ffffff;--white:#ffffff;--ink:#0d0d0d;--ink2:#1a1a1a;--ink3:#333;
+  --muted:#555;--rule:#d0d0d0;--rule-dk:#888;
+  --green-bg:#e6f4eb;--green:#0f5c2c;
+  --amber-bg:#fdf5e4;--amber:#7a4800;
+  --red-bg:#fce8e8;--red:#7a1a1a;
+  --blue-bg:#e6edf8;--blue:#0f2d66;
+  --hp-c:#0f2d66;--hp-b:#7a4800;--hp-a:#0f5c2c;
+}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;}
+.page{max-width:980px;margin:0 auto;padding:40px 24px 80px;}
+
+/* HEADER */
+.header{border-bottom:2px solid var(--ink);padding-bottom:22px;margin-bottom:32px;}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+h1{font-family:'Libre Baskerville',serif;font-size:clamp(26px,4vw,40px);font-weight:700;letter-spacing:-.02em;line-height:1.05;margin-bottom:8px;}
+.header-sub{color:var(--ink3);font-size:13px;font-weight:300;}
+
+/* HOLDING PERIOD SELECTOR */
+.hp-selector{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:2px solid var(--ink);border-radius:8px;overflow:hidden;margin-bottom:28px;}
+.hp-option{position:relative;}
+.hp-option input[type=radio]{position:absolute;opacity:0;width:0;height:0;}
+.hp-label{display:block;padding:16px 14px;cursor:pointer;transition:background .15s;border-right:1px solid var(--ink);text-align:center;}
+.hp-option:last-child .hp-label{border-right:none;}
+.hp-tag{display:block;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.hp-period{display:block;font-family:'Libre Baskerville',serif;font-size:17px;font-weight:700;color:var(--ink);margin-bottom:4px;}
+.hp-desc{display:block;font-size:11px;color:var(--muted);line-height:1.4;}
+.hp-option input:checked + .hp-label{background:var(--ink);}
+.hp-option input:checked + .hp-label .hp-tag,
+.hp-option input:checked + .hp-label .hp-period,
+.hp-option input:checked + .hp-label .hp-desc{color:var(--white);}
+
+/* REGIME BANNER */
+.regime-banner{border:1px solid var(--rule);border-left:3px solid var(--ink);border-radius:0 6px 6px 0;background:var(--white);padding:12px 16px;margin-bottom:28px;display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;}
+.regime-icon{font-size:22px;}
+.regime-content{}
+.regime-title{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--ink);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px;}
+.regime-note{font-size:12px;color:var(--ink3);}
+.regime-best{text-align:right;}
+.regime-best-label{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:3px;}
+.regime-best-sigs{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--ink);}
+@media(max-width:640px){.regime-banner{grid-template-columns:1fr};.regime-best{text-align:left;}}
+
+/* SECTION */
+.section{margin-bottom:32px;}
+.section-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--rule);}
+.section-num{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--white);background:var(--ink);width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.section-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink2);font-weight:600;}
+
+/* GRID */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;}
+@media(max-width:600px){.grid2,.grid3,.grid4{grid-template-columns:1fr;}}
+.field{display:flex;flex-direction:column;gap:5px;}
+label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);font-weight:500;}
+label .req{color:#c00;margin-left:2px;}
+
+/* FN REFS */
+.fn{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;color:var(--white);background:var(--ink);border-radius:3px;padding:1px 4px;vertical-align:super;line-height:1;margin-left:2px;text-decoration:none;cursor:pointer;}
+.fn:hover{background:var(--ink3);}
+
+/* INPUTS */
+input[type=number],input[type=text],select{font-family:'IBM Plex Mono',monospace;font-size:14px;padding:9px 12px;background:var(--white);border:1px solid var(--rule-dk);border-radius:4px;color:var(--ink);outline:none;transition:border-color .15s;width:100%;-moz-appearance:textfield;}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;}
+input:focus,select:focus{border-color:var(--ink);}
+.field-hint{font-size:11px;color:var(--muted);font-style:italic;line-height:1.4;}
+.calc-out{background:#f4f4f4;border:1px solid var(--rule);border-radius:4px;padding:9px 12px;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--ink);min-height:39px;}
+.calc-out.hl{background:#fffbe6;border-color:#c8a800;font-weight:600;}
+
+/* COLLAPSIBLE CATEGORY HELPER */
+.accordion{border:1px solid var(--rule);border-radius:8px;overflow:hidden;margin-bottom:0;}
+.accordion-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--white);cursor:pointer;user-select:none;}
+.accordion-header:hover{background:#f9f7f4;}
+.accordion-title{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--ink);}
+.accordion-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 8px;border-radius:3px;background:#e8e8e8;color:var(--ink3);}
+.accordion-arrow{font-size:12px;color:var(--muted);transition:transform .2s;}
+.accordion-body{display:none;padding:18px;border-top:1px solid var(--rule);background:var(--white);}
+.accordion-body.open{display:block;}
+.accordion-arrow.open{transform:rotate(180deg);}
+
+.cat-result{margin-top:16px;padding:14px 16px;border-radius:6px;background:#f4f4f4;border:1px solid var(--rule);display:flex;align-items:center;gap:16px;}
+.cat-result-label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+.cat-result-val{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:var(--ink);}
+.cat-result-note{font-size:12px;color:var(--ink3);flex:1;}
+.btn-apply{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:6px 14px;background:var(--ink);color:var(--white);border:none;border-radius:4px;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;}
+.btn-apply:hover{background:var(--ink3);}
+
+/* SIGNAL CARDS */
+.signal-card{background:var(--white);border:1px solid var(--rule);border-radius:8px;overflow:hidden;margin-bottom:10px;transition:border-color .2s;}
+.signal-card.firing{border-color:var(--ink);}
+.signal-card.muted-card{opacity:.7;}
+.signal-top{display:grid;grid-template-columns:1fr 170px 90px;gap:14px;align-items:start;padding:14px 16px 10px;}
+@media(max-width:600px){.signal-top{grid-template-columns:1fr;}}
+.sig-name{font-weight:600;font-size:14px;color:var(--ink);margin-bottom:3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.sig-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 7px;border-radius:3px;font-weight:500;white-space:nowrap;}
+.b-t1{background:#e8e8e8;color:#333;}
+.b-t2{background:#e8e4f0;color:#4a1a8b;}
+.b-removed{background:var(--red-bg);color:var(--red);}
+.sig-what{font-size:12px;color:var(--ink3);line-height:1.5;margin-top:4px;}
+.sig-where{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5;}
+.sig-where strong{color:var(--ink3);font-weight:600;}
+
+/* WEIGHT INDICATOR */
+.sig-weight{display:flex;flex-direction:column;gap:4px;}
+.sig-weight-label{font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);}
+.weight-bars{display:flex;gap:3px;margin-top:2px;}
+.wb{width:8px;height:20px;border-radius:2px;background:#e8e8e8;}
+.wb.on{background:var(--ink);}
+.wb.half{background:#999;}
+.weight-val{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink);font-weight:600;margin-top:3px;}
+
+.sig-score-block{display:flex;flex-direction:column;align-items:flex-end;}
+.sig-score-lbl{font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);}
+.sig-score-val{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;line-height:1;}
+.sig-score-val.active{color:var(--ink);}
+.sig-score-val.zero{color:#ccc;}
+.sig-max{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);}
+
+.sig-input-block{display:flex;flex-direction:column;gap:4px;}
+.sig-input-lbl{font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);}
+
+.thresh-row{display:flex;border-top:1px solid var(--rule);font-family:'IBM Plex Mono',monospace;font-size:11px;}
+.tc{flex:1;padding:7px 10px;border-right:1px solid var(--rule);display:flex;flex-direction:column;gap:2px;}
+.tc:last-child{border-right:none;}
+.tc.lit{background:#f5f3f0;}
+.tc-val{font-weight:600;font-size:12px;color:var(--ink);}
+.tc-pts{color:var(--muted);font-size:10px;}
+.tc.lit .tc-pts{color:var(--green);font-weight:600;}
+.howto{background:var(--blue-bg);border-top:1px solid #b3c5e8;padding:10px 16px;font-size:12px;color:var(--blue);line-height:1.6;}
+.howto strong{font-weight:600;}
+.howto code{font-family:'IBM Plex Mono',monospace;font-size:11px;background:rgba(255,255,255,.7);padding:1px 5px;border-radius:3px;}
+
+/* CBOE BUTTON */
+.cboe-btn{display:inline-flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;background:none;border:1px solid var(--ink);color:var(--ink);padding:7px 13px;border-radius:4px;cursor:pointer;text-decoration:none;margin-top:6px;transition:all .15s;}
+.cboe-btn:hover{background:var(--ink);color:var(--white);}
+
+/* SCORE SUMMARY */
+.score-chips{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px;}
+@media(max-width:600px){.score-chips{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:380px){.score-chips{grid-template-columns:1fr 1fr;}}
+.chip{background:#f4f4f4;border:1px solid var(--rule);border-radius:6px;padding:9px 10px;display:flex;flex-direction:column;gap:2px;}
+.chip.active{border-color:var(--ink);background:#f5f3f0;}
+.chip-name{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+.chip-val{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:#ccc;}
+.chip.active .chip-val{color:var(--ink);}
+.chip-pts{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);}
+.chip.active .chip-pts{color:var(--green);}
+
+.score-bar-track{height:10px;background:#e8e8e8;border-radius:5px;overflow:hidden;}
+.score-bar-fill{height:100%;border-radius:5px;background:var(--ink);transition:width .35s ease;}
+.score-bar-labels{display:flex;justify-content:space-between;margin-top:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);}
+
+/* RESULTS */
+.results{background:var(--white);border:2px solid var(--ink);border-radius:8px;overflow:hidden;margin-top:8px;}
+.results-hdr{background:var(--ink);color:var(--white);padding:13px 18px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:600;}
+.results-body{padding:18px;}
+.result-primary{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--rule);border-radius:6px;overflow:hidden;margin-bottom:14px;}
+.rcell{background:var(--white);padding:14px;text-align:center;}
+.rcell-lbl{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.rcell-val{font-family:'Libre Baskerville',serif;font-size:26px;font-weight:700;color:var(--ink);line-height:1;}
+.rcell-sub{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:3px;}
+.status-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.05em;}
+.badge-go{background:var(--green-bg);color:var(--green);}
+.badge-partial{background:var(--amber-bg);color:var(--amber);}
+.badge-wait{background:var(--red-bg);color:var(--red);}
+.badge-skip{background:#f0f0f0;color:var(--muted);}
+.notice{border-radius:6px;padding:11px 14px;font-size:13px;line-height:1.6;margin-top:10px;}
+.n-info{background:var(--blue-bg);color:var(--blue);border:1px solid #b3c5e8;}
+.n-warn{background:var(--amber-bg);color:var(--amber);border:1px solid #e8cfa0;}
+.n-ok{background:var(--green-bg);color:var(--green);border:1px solid #a8d5b5;}
+.n-err{background:var(--red-bg);color:var(--red);border:1px solid #e8b3b3;}
+.notice strong{font-weight:600;}
+.tier-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;}
+.tier-table th{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:7px 10px;text-align:left;border-bottom:1px solid var(--rule);font-weight:500;}
+.tier-table td{padding:8px 10px;border-bottom:1px solid var(--rule);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink2);}
+.tier-table tr.active td{background:#f4f4f4;font-weight:600;color:var(--ink);}
+.tier-table tr.active td:first-child{border-left:3px solid var(--ink);}
+.tier-table tr.passed td{color:var(--muted);text-decoration:line-through;}
+.rrow{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--rule);}
+.rrow:last-child{border-bottom:none;}
+.rrow-lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+.rrow-val{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--ink);}
+
+/* FOOTNOTES */
+.fn-section{margin-top:48px;padding-top:24px;border-top:2px solid var(--ink);}
+.fn-title{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+.fn-title::after{content:'';flex:1;height:1px;background:var(--rule);}
+.fn-group{margin-bottom:24px;}
+.fn-group-title{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--rule);}
+.fn-item{display:grid;grid-template-columns:26px 1fr;gap:0 12px;margin-bottom:14px;align-items:start;scroll-margin-top:20px;padding:8px;border-radius:6px;transition:background 1.5s;}
+.fn-num{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--white);background:var(--ink);border-radius:3px;padding:2px 0;text-align:center;margin-top:2px;line-height:1.5;}
+.fn-formula{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--ink);margin-bottom:3px;}
+.fn-formula .op{color:var(--muted);}
+.fn-ex{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink3);background:#f4f4f4;border-left:2px solid var(--rule-dk);padding:4px 10px;margin:5px 0;border-radius:0 3px 3px 0;}
+.fn-ex .res{color:var(--green);font-weight:600;}
+.fn-note{font-size:12px;color:var(--muted);line-height:1.55;margin-top:3px;}
+.fn-where{font-size:11px;color:var(--blue);margin-top:4px;line-height:1.5;background:var(--blue-bg);border-radius:4px;padding:5px 10px;}
+.fn-correction{font-size:11px;color:var(--red);margin-top:4px;background:var(--red-bg);border-radius:4px;padding:5px 10px;line-height:1.5;}
+
+/* RESET BTN */
+.btn-reset{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;background:none;border:1px solid var(--rule-dk);color:var(--muted);padding:7px 16px;border-radius:4px;cursor:pointer;transition:all .15s;margin-top:18px;}
+.btn-reset:hover{border-color:var(--ink);color:var(--ink);}
+.divider{height:1px;background:var(--rule);margin:24px 0;}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ═══ HEADER ═══ -->
+<div class="header">
+  <div class="eyebrow">Evidence-Based · Academically Validated · v2.0</div>
+  <h1>Dip-Buying Calculator</h1>
+  <p class="header-sub">Select your holding strategy first — signals are weighted differently for each horizon based on peer-reviewed research.</p>
+</div>
+
+<!-- ═══ HOLDING PERIOD SELECTOR ═══ -->
+<div class="hp-selector">
+  <div class="hp-option">
+    <input type="radio" name="hp" id="hp_c" value="C" onchange="onHPChange()">
+    <label for="hp_c" class="hp-label">
+      <span class="hp-tag">Strategy C</span>
+      <span class="hp-period">3 – 6 Months</span>
+      <span class="hp-desc">Momentum-aligned · ATR & oscillator signals dominate</span>
+    </label>
+  </div>
+  <div class="hp-option">
+    <input type="radio" name="hp" id="hp_b" value="B" checked onchange="onHPChange()">
+    <label for="hp_b" class="hp-label">
+      <span class="hp-tag">Strategy B</span>
+      <span class="hp-period">6 – 12 Months</span>
+      <span class="hp-desc">Transition zone · VIX is peak signal (R²=29%)</span>
+    </label>
+  </div>
+  <div class="hp-option">
+    <input type="radio" name="hp" id="hp_a" value="A" onchange="onHPChange()">
+    <label for="hp_a" class="hp-label">
+      <span class="hp-tag">Strategy A</span>
+      <span class="hp-period">1+ Year</span>
+      <span class="hp-desc">Mean-reversion regime · Z-Score rehabilitated</span>
+    </label>
+  </div>
+</div>
+
+<!-- ═══ REGIME BANNER ═══ -->
+<div class="regime-banner" id="regimeBanner">
+  <div class="regime-icon" id="regimeIcon">📊</div>
+  <div class="regime-content">
+    <div class="regime-title" id="regimeTitle">6–12 Month Regime</div>
+    <div class="regime-note" id="regimeNote">VIX threshold and insider buying peak here. Z-Score begins contributing around months 9–12. Price oscillator remains strong.</div>
+  </div>
+  <div class="regime-best">
+    <span class="regime-best-label">Strongest Signals</span>
+    <span class="regime-best-sigs" id="regimeBest">VIX · 200-MA · Oscillator</span>
+  </div>
+</div>
+
+<!-- ═══ SECTION 1: PORTFOLIO ═══ -->
+<div class="section">
+  <div class="section-header"><span class="section-num">1</span><span class="section-title">Portfolio Setup</span></div>
+  <div class="grid3">
+    <div class="field">
+      <label>Portfolio Name</label>
+      <input type="text" id="portName" placeholder="e.g. Retirement IRA">
+    </div>
+    <div class="field">
+      <label>Total Portfolio Size ($) <span class="req">*</span></label>
+      <input type="number" id="portSize" placeholder="200000" min="1000" step="1000" oninput="calc()">
+    </div>
+    <div class="field">
+      <label>Available Cash Reserve ($) <span class="req">*</span></label>
+      <input type="number" id="cashRes" placeholder="50000" min="0" step="500" oninput="calc()">
+    </div>
+    <div class="field">
+      <label>Black Swan Floor ($) <a class="fn" href="#fn1" onclick="scrollFn(event,1)">1</a></label>
+      <div class="calc-out" id="out_bsf">—</div>
+      <span class="field-hint">Auto: Cash Reserve × 17.5% — never deploy below this</span>
+    </div>
+    <div class="field">
+      <label>Drawdown Match for This Strategy</label>
+      <div class="calc-out" id="out_ddMatch">—</div>
+      <span class="field-hint">Recommended drawdown depth per holding period</span>
+    </div>
+    <div class="field">
+      <label>Max Position Size (10%)</label>
+      <div class="calc-out" id="out_maxPos">—</div>
+      <span class="field-hint">No single stock > 10% of portfolio</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SECTION 2: STOCK CATEGORY HELPER ═══ -->
+<div class="section">
+  <div class="section-header"><span class="section-num">2</span><span class="section-title">Stock Category Helper</span></div>
+  <div class="accordion">
+    <div class="accordion-header" onclick="toggleAccordion()">
+      <div>
+        <div class="accordion-title">Not sure which category? Run the classifier →</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="accordion-badge" id="catBadge">Dividend / Blue Chip / Growth</span>
+        <span class="accordion-arrow" id="catArrow">▼</span>
+      </div>
+    </div>
+    <div class="accordion-body" id="catBody">
+      <div class="grid4">
+        <div class="field">
+          <label>Dividend Yield (%)</label>
+          <input type="number" id="ch_div" placeholder="e.g. 2.5" min="0" max="20" step="0.1" oninput="classifyStock()">
+          <span class="field-hint">>2.5% = dividend signal</span>
+        </div>
+        <div class="field">
+          <label>Market Cap ($B)</label>
+          <input type="number" id="ch_cap" placeholder="e.g. 250" min="0" step="1" oninput="classifyStock()">
+          <span class="field-hint">>$50B = large-cap signal</span>
+        </div>
+        <div class="field">
+          <label>Revenue Growth YoY (%)</label>
+          <input type="number" id="ch_growth" placeholder="e.g. 8" min="-50" max="200" step="1" oninput="classifyStock()">
+          <span class="field-hint">>15% = growth signal</span>
+        </div>
+        <div class="field">
+          <label>Beta (vs. S&P 500)</label>
+          <input type="number" id="ch_beta" placeholder="e.g. 1.1" min="0" max="5" step="0.1" oninput="classifyStock()">
+          <span class="field-hint">>1.3 = growth · <0.8 = dividend</span>
+        </div>
+      </div>
+      <div class="cat-result" id="catResult" style="display:none;">
+        <div>
+          <div class="cat-result-label">Suggested Category</div>
+          <div class="cat-result-val" id="catResultVal">—</div>
+        </div>
+        <div class="cat-result-note" id="catResultNote"></div>
+        <button class="btn-apply" onclick="applyCategory()">Apply →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SECTION 3: STOCK INFO ═══ -->
+<div class="section">
+  <div class="section-header"><span class="section-num">3</span><span class="section-title">Stock Information</span></div>
+  <div class="grid3">
+    <div class="field">
+      <label>Ticker Symbol <span class="req">*</span></label>
+      <input type="text" id="ticker" placeholder="AAPL" oninput="calc()">
+    </div>
+    <div class="field">
+      <label>Stock Category <span class="req">*</span></label>
+      <select id="stockCat" onchange="calc()">
+        <option value="">— Select —</option>
+        <option value="dividend">Dividend / Value</option>
+        <option value="bluechip">Large-Cap / Blue Chip</option>
+        <option value="growth">Growth / Tech</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>14-Day ATR % <span class="req">*</span> <a class="fn" href="#fn2" onclick="scrollFn(event,2)">2</a></label>
+      <input type="number" id="atrPct" placeholder="1.8" min="0.1" max="20" step="0.1" oninput="calc()">
+      <span class="field-hint">TradingView → search "ATR%" indicator</span>
+    </div>
+    <div class="field">
+      <label>Current Price ($) <span class="req">*</span></label>
+      <input type="number" id="curPrice" placeholder="185.00" min="0.01" step="0.01" oninput="calc()">
+    </div>
+    <div class="field">
+      <label>252-Day Recent High ($) <span class="req">*</span></label>
+      <input type="number" id="recHigh" placeholder="210.00" min="0.01" step="0.01" oninput="calc()">
+      <span class="field-hint">Yahoo Finance → "52-week High"</span>
+    </div>
+    <div class="field">
+      <label>Current Drawdown <a class="fn" href="#fn3" onclick="scrollFn(event,3)">3</a></label>
+      <div class="calc-out hl" id="out_dd">—</div>
+      <span class="field-hint">Auto: (High − Price) ÷ High × 100</span>
+    </div>
+  </div>
+  <div class="grid2" style="margin-top:12px;">
+    <div class="field">
+      <label>Buy Interval <a class="fn" href="#fn4" onclick="scrollFn(event,4)">4</a></label>
+      <div class="calc-out" id="out_interval">—</div>
+      <span class="field-hint">Auto: 2 × ATR% × 1.75</span>
+    </div>
+    <div class="field">
+      <label>Triggered Tier <a class="fn" href="#fn5" onclick="scrollFn(event,5)">5</a></label>
+      <div class="calc-out hl" id="out_tier">—</div>
+      <span class="field-hint">Tier fires when drawdown ≥ cumulative interval</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SECTION 4: SIGNALS ═══ -->
+<div class="section">
+  <div class="section-header"><span class="section-num">4</span><span class="section-title">Signal Inputs — Enter Your Numbers</span></div>
+  <p style="color:var(--ink3);font-size:13px;margin-bottom:16px;">The weight bars show how much each signal matters for your selected holding period. Points are automatically adjusted. Signals marked as low-weight have limited predictive value at that horizon.</p>
+
+  <!-- RSI -->
+  <div class="signal-card" id="card_rsi">
+    <div class="signal-top">
+      <div>
+        <div class="sig-name">RSI(5) — Relative Strength Index <span class="sig-badge b-t1">Tier 1</span></div>
+        <div class="sig-what"><strong>What it measures:</strong> Short-term oversold condition. Most effective at very short horizons (days–weeks). At medium/long holding periods, RSI oversold stocks often have negative momentum that persists — use as entry timing only, not primary signal.</div>
+        <div class="sig-where"><strong>Where:</strong> TradingView → Indicators → RSI → set Length to <strong>5</strong>. Read value from legend.</div>
+      </div>
+      <div class="sig-input-block">
+        <div class="sig-input-lbl">RSI(5) Value <a class="fn" href="#fn6" onclick="scrollFn(event,6)">6</a></div>
+        <input type="number" id="sig_rsi" placeholder="e.g. 12" min="0" max="100" step="0.1" oninput="calc()" style="font-size:16px;">
+        <span class="field-hint">Thresholds: &lt;20 / &lt;10 / &lt;5</span>
+        <div class="sig-weight">
+          <div class="sig-weight-label">Weight for strategy</div>
+          <div class="weight-bars" id="wb_rsi"><div class="wb"></div><div class="wb"></div><div class="wb"></div></div>
+          <div class="weight-val" id="wv_rsi">—</div>
+        </div>
+      </div>
+      <div class="sig-score-block">
+        <div class="sig-score-lbl">Pts</div>
+        <div class="sig-score-val zero" id="pts_rsi">0</div>
+        <div class="sig-max">max 3</div>
+      </div>
+    </div>
+    <div class="thresh-row">
+      <div class="tc" id="t_rsi20"><div class="tc-val">&lt; 20</div><div class="tc-pts">+1 pt</div></div>
+      <div class="tc" id="t_rsi10"><div class="tc-val">&lt; 10</div><div class="tc-pts">+2 pts</div></div>
+      <div class="tc" id="t_rsi5"><div class="tc-val">&lt; 5</div><div class="tc-pts">+3 pts</div></div>
+      <div class="tc" style="flex:2"><div class="tc-val" style="color:var(--muted);font-size:11px;font-weight:400">Thresholds shifted lower per academic correction — Connors research uses RSI(2) with thresholds of 5/10. Only score one level — the lowest your RSI hits.</div></div>
+    </div>
+    <div class="howto"><strong>Formula:</strong> RSI = 100 − (100 ÷ (1 + Avg Gain ÷ Avg Loss)) over 5 periods. Always read from charting platform. <strong>Academic note (Connors 2008):</strong> Proprietary research, not peer-reviewed. Signal effectiveness primarily at holding periods under 2 weeks. At 3–12 month horizons, this signal works AGAINST you (negative momentum persists per Jegadeesh & Titman 1993).</div>
+  </div>
+
+  <!-- 200-MA -->
+  <div class="signal-card" id="card_ma">
+    <div class="signal-top">
+      <div>
+        <div class="sig-name">200-Day MA Distance <span class="sig-badge b-t1">Tier 1 · Gate</span></div>
+        <div class="sig-what"><strong>What it measures:</strong> How far price is from its long-term trend. <em>New in v2:</em> Distance-based scoring replaces binary above/below. Research (Avramov et al. 2021, RFS) found 8.35% alpha at 3 months for stocks below MA — but >20% below signals probable value trap. Gate multiplier adjusts position size.</div>
+        <div class="sig-where"><strong>Where:</strong> TradingView → Indicators → MA → Length 200. Also on Finviz.com "200-Day MA" field.</div>
+      </div>
+      <div class="sig-input-block">
+        <div class="sig-input-lbl">200-Day MA Value ($) <a class="fn" href="#fn7" onclick="scrollFn(event,7)">7</a></div>
+        <input type="number" id="sig_ma" placeholder="e.g. 178.50" min="0" step="0.01" oninput="calc()" style="font-size:16px;">
+        <div class="sig-weight">
+          <div class="sig-weight-label">Weight for strategy</div>
+          <div class="weight-bars" id="wb_ma"></div>
+          <div class="weight-val" id="wv_ma">—</div>
+        </div>
+      </div>
+      <div class="sig-score-block">
+        <div class="sig-score-lbl">Pts</div>
+        <div class="sig-score-val zero" id="pts_ma">0</div>
+        <div class="sig-max">max 2</div>
+      </div>
+    </div>
+    <div class="thresh-row">
+      <div class="tc" id="t_ma_above"><div class="tc-val">Above MA</div><div class="tc-pts">+2 · mult 1.0</div></div>
+      <div class="tc" id="t_ma_0_5"><div class="tc-val">0–5% below</div><div class="tc-pts">+1.5 · mult 1.0</div></div>
+      <div class="tc" id="t_ma_5_10"><div class="tc-val">5–10% below</div><div class="tc-pts">+1 · mult 0.75</div></div>
+      <div class="tc" id="t_ma_10_20"><div class="tc-val">10–20% below</div><div class="tc-pts">+0.5 · mult 0.5</div></div>
+      <div class="tc" id="t_ma_deep"><div class="tc-val">&gt;20% below</div><div class="tc-pts">0 · mult 0.25</div></div>
+    </div>
+    <div class="howto"><strong>Gate Multiplier</strong> adjusts final buy amount based on distance below MA. A stock >20% below its 200-day MA has a ~54% probability of never recovering to prior high (Morgan Stanley 2025). <strong>Academic correction:</strong> Distance below MA predicts higher returns via anchoring bias (Avramov et al. 2021), but >20% below is value-trap territory where momentum drag dominates.</div>
+  </div>
+
+  <!-- VOLUME -->
+  <div class="signal-card" id="card_vol">
+    <div class="signal-top">
+      <div>
+        <div class="sig-name">Volume Capitulation Ratio <span class="sig-badge b-t2">Tier 2 · Confirmation</span></div>
+        <div class="sig-what"><strong>What it measures:</strong> Whether panic selling is occurring. High-volume down days primarily reverse over 1 day to 1 month (Campbell, Grossman, Wang 1993; Gervais et al. 2001). Effect fully dissipates by 3 months. Low weight at medium/long-term holds. <em>Best combined with a price decline of >2% on the day.</em></div>
+        <div class="sig-where"><strong>Where:</strong> Today's volume on Yahoo Finance. 20-day avg on Finviz.com "Avg Volume" field.</div>
+      </div>
+      <div class="sig-input-block">
+        <div class="sig-input-lbl">Volume Ratio (today ÷ avg) <a class="fn" href="#fn8" onclick="scrollFn(event,8)">8</a></div>
+        <input type="number" id="sig_vol" placeholder="e.g. 2.3" min="0" step="0.1" oninput="calc()" style="font-size:16px;">
+        <span class="field-hint">Today vol ÷ 20-day avg vol</span>
+        <div class="sig-weight">
+          <div class="sig-weight-label">Weight for strategy</div>
+          <div class="weight-bars" id="wb_vol"></div>
+          <div class="weight-val" id="wv_vol">—</div>
+        </div>
+      </div>
+      <div class="sig-score-block">
+        <div class="sig-score-lbl">Pts</div>
+        <div class="sig-score-val zero" id="pts_vol">0</div>
+        <div class="sig-max">max 2</div>
+      </div>
+    </div>
+    <div class="thresh-row">
+      <div class="tc" id="t_vol15"><div class="tc-val">≥ 1.5×</div><div class="tc-pts">+1 pt · elevated</div></div>
+      <div class="tc" id="t_vol20"><div class="tc-val">≥ 2.0×</div><div class="tc-pts">+2 pts · capitulation</div></div>
+      <div class="tc" style="flex:2"><div class="tc-val" style="color:var(--muted);font-size:11px;font-weight:400">Score highest applicable level only. Best when today's candle closes above its intraday low (hammer pattern).</div></div>
+    </div>
+    <div class="howto"><strong>Formula:</strong> <code>Volume Ratio = Today's Volume ÷ 20-Day Average Volume</code> — Example: 85M ÷ 37M = <strong>2.30×</strong>. <strong>Academic note:</strong> Volume reversal effect strongest at 1-day horizon, persists ~1 month, essentially zero beyond 3 months (Llorente et al. 2002).</div>
+  </div>
+
+  <!-- Z-SCORE -->
+  <div class="signal-card" id="card_z">
+    <div class="signal-top">
+      <div>
+        <div class="sig-name">Price Z-Score <span class="sig-badge b-t2">Tier 2 · Mean Reversion</span></div>
+        <div class="sig-what"><strong>What it measures:</strong> Standard deviations below 20-day average. <em>Critically:</em> At 3–6 month horizons, this signal FIGHTS intermediate momentum (Jegadeesh & Titman 1993). At 1+ year horizons it's a strong contrarian signal (DeBondt & Thaler 1985). Weight varies dramatically by holding period.</div>
+        <div class="sig-where"><strong>Easiest method:</strong> Bollinger Bands on TradingView — price below the lower band (20-period, 2-StdDev) ≈ Z-score ≤ −2.0. For exact value: Thinkorswim has built-in "PriceZScore" study.</div>
+      </div>
+      <div class="sig-input-block">
+        <div class="sig-input-lbl">Z-Score Value <a class="fn" href="#fn9" onclick="scrollFn(event,9)">9</a></div>
+        <input type="number" id="sig_z" placeholder="e.g. -2.4" min="-10" max="10" step="0.1" oninput="calc()" style="font-size:16px;">
+        <span class="field-hint">Negative = below average. Enter e.g. −2.4</span>
+        <div class="sig-weight">
+          <div class="sig-weight-label">Weight for strategy</div>
+          <div class="weight-bars" id="wb_z"></div>
+          <div class="weight-val" id="wv_z">—</div>
+        </div>
+      </div>
+      <div class="sig-score-block">
+        <div class="sig-score-lbl">Pts</div>
+        <div class="sig-score-val zero" id="pts_z">0</div>
+        <div class="sig-max">max 1</div>
+      </div>
+    </div>
+    <div class="thresh-row">
+      <div class="tc" id="t_z15"><div class="tc-val">≤ −1.5</div><div class="tc-pts">+0.25 pt</div></div>
+      <div class="tc" id="t_z20"><div class="tc-val">≤ −2.0</div><div class="tc-pts">+0.75 pt</div></div>
+      <div class="tc" id="t_z30"><div class="tc-val">≤ −3.0</div><div class="tc-pts">+1.0 pt (extreme)</div></div>
+    </div>
+    <div class="howto"><strong>Formula:</strong> <code>Z-Score = (Price − 20-Day SMA) ÷ 20-Day StdDev</code><br>StdDev is in the same dollar units as price — the division produces a <em>dimensionless</em> number (not dollars). In Excel: <code>=(Price − AVERAGE(range)) / STDEV(range)</code>. <strong>Footnote correction:</strong> StdDev in the formula IS expressed in dollars — this is correct. The result is unitless. Example: ($185 − $196) ÷ $5.30 = −2.08 (dimensionless).</div>
+  </div>
+
+  <!-- ATR EXPANSION -->
+  <div class="signal-card" id="card_atr">
+    <div class="signal-top">
+      <div>
+        <div class="sig-name">ATR Expansion Ratio <span class="sig-badge b-t2">Tier 2 · Volatility</span></div>
+        <div class="sig-what"><strong>What it measures:</strong> Whether today's price swings are abnormally large — indicating panic. Volatility mean-reverts with a half-life of ~23 days (GARCH literature). Best for 1–3 month holds. <em>Threshold raised to 1.65× per SentimenTrader research.</em></div>
+        <div class="sig-where"><strong>Where:</strong> TradingView → Indicators → ATR (length 14). Today's ATR ÷ visual 20-day average of ATR bars.</div>
+      </div>
+      <div class="sig-input-block">
+        <div class="sig-input-lbl">ATR Ratio (today ÷ 20d avg) <a class="fn" href="#fn10" onclick="scrollFn(event,10)">10</a></div>
+        <input type="number" id="sig_atr" placeholder="e.g. 1.8" min="0" step="0.05" oninput="calc()" style="font-size:16px;">
+        <span class="field-hint">1.0 = normal · &gt;1.65 = expanding</span>
+        <div class="sig-weight">
+          <div class="sig-weight-label">Weight for strategy</div>
+          <div class="weight-bars" id="wb_atr"></div>
+          <div class="weight-val" id="wv_atr">—</div>
+        </div>
+      </div>
+      <div class="sig-score-block">
+        <div class="sig-score-lbl">Pts</div>
+        <div class="sig-score-val zero" id="pts_atr">0</div>
+        <div class="sig-max">max 1</div>
+      </div>
+    </div>
+    <div class="thresh-row">
+      <div class="tc" id="t_atr15"><div class="tc-val">≥ 1.5×</div><div class="tc-pts">+0.5 pt</div></div>
+      <div class="tc" id="t_atr165"><div class="tc-val">≥ 1.65×</div><div class="tc-pts">+0.75 pt</div></div>
+      <div class="tc" id="t_atr20"><div class="tc-val">≥ 2.0×</div><div class="tc-pts">+1.0 pt (extreme)</div></div>
+    </div>
+    <div class="howto"><strong>Formula:</strong> <code>ATR Ratio = Today's ATR(14) ÷ Average of last 20 ATR(14) values</code> — Example: 4.80 ÷ 3.10 = <strong>1.55×</strong>. <strong>Academic correction:</strong> Threshold raised from 1.5× to 1.65× per SentimenTrader tested approach. Volatility half-life is ~23 days — this signal best at 1–3 month holds; rapidly diminishes beyond that.</div>
+  </div>
+
+  <!-- PRICE OSCILLATOR -->
+  <div class="signal-card" id="card_osc">
+    <div class="signal-top">
+      <div>
+        <div class="sig-name">4-Week / 52-Week Price Oscillator <span class="sig-badge b-t2">Tier 2 · Trend</span></div>
+        <div class="sig-what"><strong>What it measures (CORRECTED in v2):</strong> S&P Global 2018 study found among dip stocks, those with <em>higher</em> oscillator values (maintaining trend despite dip) had better forward returns — <em>not</em> lower. Score now rewards higher values. A high ratio means the stock still maintains relative trend strength despite the pullback.</div>
+        <div class="sig-where"><strong>Where:</strong> TradingView → add two SMA indicators (lengths 20 and 252) → Divide the 20-SMA value by the 252-SMA value shown in the legend.</div>
+      </div>
+      <div class="sig-input-block">
+        <div class="sig-input-lbl">Oscillator (20-SMA ÷ 252-SMA) <a class="fn" href="#fn11" onclick="scrollFn(event,11)">11</a></div>
+        <input type="number" id="sig_osc" placeholder="e.g. 0.94" min="0" max="3" step="0.01" oninput="calc()" style="font-size:16px;">
+        <span class="field-hint">Higher = better. Enter e.g. 0.94</span>
+        <div class="sig-weight">
+          <div class="sig-weight-label">Weight for strategy</div>
+          <div class="weight-bars" id="wb_osc"></div>
+          <div class="weight-val" id="wv_osc">—</div>
+        </div>
+      </div>
+      <div class="sig-score-block">
+        <div class="sig-score-lbl">Pts</div>
+        <div class="sig-score-val zero" id="pts_osc">0</div>
+        <div class="sig-max">max 1</div>
+      </div>
+    </div>
+    <div class="thresh-row">
+      <div class="tc" id="t_osc95"><div class="tc-val">≥ 0.95</div><div class="tc-pts">+1.0 pt · trend held</div></div>
+      <div class="tc" id="t_osc85"><div class="tc-val">0.85–0.95</div><div class="tc-pts">+0.5 pt · mild drift</div></div>
+      <div class="tc" id="t_osc_low"><div class="tc-val">&lt; 0.85</div><div class="tc-pts">0 pts · momentum drag</div></div>
+    </div>
+    <div class="howto"><strong>Formula:</strong> <code>Oscillator = 20-Day SMA ÷ 252-Day SMA</code> — Excel: <code>=AVERAGE(last 20 closes) / AVERAGE(last 252 closes)</code>. <strong>v2 correction:</strong> Direction inverted from previous version. S&P Global (2018) used EMA (not SMA) and found HIGHER-ranked oscillator stocks in their study had 49.33% excess returns vs 28.40% for all dip stocks. Higher = better maintained trend = stronger forward return candidate.</div>
+  </div>
+
+  <!-- PUT/CALL -->
+  <div class="signal-card" id="card_pc">
+    <div class="signal-top">
+      <div>
+        <div class="sig-name">Put/Call Ratio <span class="sig-badge b-t1">Tier 1 · Sentiment</span></div>
+        <div class="sig-what"><strong>What it measures:</strong> Market-wide fear level. Put/call ratio effect is primarily a short-term signal (days to weeks per Simon & Wiggins 2001, Pan & Poteshman 2006). Signal predictability largely disappeared after the 2009 insider trading crackdown (Bondarenko & Muravyev). <em>Removed from 1+ year strategy.</em></div>
+        <div class="sig-where"><strong>Where to find:</strong> Click to open CBOE directly, then read the "Equity" or "Total" put/call ratio.</div>
+      </div>
+      <div class="sig-input-block">
+        <div class="sig-input-lbl">Put/Call Ratio</div>
+        <input type="number" id="sig_pc" placeholder="e.g. 1.30" min="0" max="5" step="0.01" oninput="calc()" style="font-size:16px;">
+        <a class="cboe-btn" href="https://www.cboe.com/us/options/market_statistics/daily/" target="_blank">↗ Open CBOE Daily Stats</a>
+        <div class="sig-weight">
+          <div class="sig-weight-label">Weight for strategy</div>
+          <div class="weight-bars" id="wb_pc"></div>
+          <div class="weight-val" id="wv_pc">—</div>
+        </div>
+      </div>
+      <div class="sig-score-block">
+        <div class="sig-score-lbl">Pts</div>
+        <div class="sig-score-val zero" id="pts_pc">0</div>
+        <div class="sig-max">max 1</div>
+      </div>
+    </div>
+    <div class="thresh-row">
+      <div class="tc" id="t_pc123"><div class="tc-val">≥ 1.23</div><div class="tc-pts">+0.5 pt · 95th pct</div></div>
+      <div class="tc" id="t_pc15"><div class="tc-val">≥ 1.5</div><div class="tc-pts">+1.0 pt · extreme</div></div>
+      <div class="tc" style="flex:2"><div class="tc-val" style="color:var(--muted);font-size:11px;font-weight:400">Threshold updated to 1.23 (95th percentile of CBOE equity P/C ratio distribution, 2007–2022).</div></div>
+    </div>
+    <div class="howto"><strong>How to read CBOE data:</strong> Open the link above → look for "EQUITY Put/Call Ratio" (best for individual stocks) or "TOTAL Put/Call Ratio" (broader signal). No formula needed — it's a published daily number. Normal range: 0.65–0.80. Above 1.0 = elevated. Above 1.23 = 95th percentile fear. Above 1.5 = extreme panic.</div>
+  </div>
+
+  <!-- VIX -->
+  <div class="signal-card" id="card_vix">
+    <div class="signal-top">
+      <div>
+        <div class="sig-name">VIX — Volatility Index + Spike Detection <span class="sig-badge b-t1">Tier 1 · Strongest</span></div>
+        <div class="sig-what"><strong>What it measures:</strong> Market fear. Peak signal at 6–12 month horizon (Bansal & Stivers 2025 — R²=29% at 12 months). <em>New in v2:</em> Relative spike detection added — VIX today vs. its 20-day moving average triggers a bonus if it's ≥1.5× above average (nonlinear threshold per Bansal & Stivers).</div>
+        <div class="sig-where"><strong>Where:</strong> Google "VIX today" or search "^VIX" on Yahoo Finance. For 20-day VIX average: TradingView → type "VIX" → add 20-period SMA to the chart.</div>
+      </div>
+      <div class="sig-input-block">
+        <div class="sig-input-lbl">Current VIX Level</div>
+        <input type="number" id="sig_vix" placeholder="e.g. 32" min="0" max="150" step="0.1" oninput="calc()" style="font-size:16px;margin-bottom:5px;">
+        <div class="sig-input-lbl" style="margin-top:4px;">VIX 20-Day Avg (optional) <a class="fn" href="#fn12" onclick="scrollFn(event,12)">12</a></div>
+        <input type="number" id="sig_vix_avg" placeholder="e.g. 20" min="0" max="150" step="0.1" oninput="calc()" style="font-size:14px;">
+        <div class="sig-weight">
+          <div class="sig-weight-label">Weight for strategy</div>
+          <div class="weight-bars" id="wb_vix"></div>
+          <div class="weight-val" id="wv_vix">—</div>
+        </div>
+      </div>
+      <div class="sig-score-block">
+        <div class="sig-score-lbl">Pts</div>
+        <div class="sig-score-val zero" id="pts_vix">0</div>
+        <div class="sig-max">max 1.5</div>
+      </div>
+    </div>
+    <div class="thresh-row">
+      <div class="tc" id="t_vix30"><div class="tc-val">≥ 30</div><div class="tc-pts">+0.5 pt</div></div>
+      <div class="tc" id="t_vix45"><div class="tc-val">≥ 45</div><div class="tc-pts">+1.0 pt</div></div>
+      <div class="tc" id="t_vix_spike"><div class="tc-val">≥ 1.5× avg</div><div class="tc-pts">+0.5 pt bonus</div></div>
+      <div class="tc"><div class="tc-val" style="color:var(--muted);font-size:11px;font-weight:400">Spike bonus (new) adds 0.5 pts if today's VIX ≥ 1.5× its 20-day avg — nonlinear threshold per Bansal & Stivers.</div></div>
+    </div>
+    <div class="howto"><strong>How to read:</strong> VIX is published in real time on CBOE.com and Yahoo Finance (^VIX). No calculation needed for the absolute level. For the spike detection, add a 20-period SMA to the VIX chart on TradingView and compare today's value to that line. <strong>Historical context:</strong> COVID 2020 peaked at ~85. 2008 crisis peaked at ~80. Normal range: 12–20.</div>
+
+  <!-- INSIDER BUYING -->
+  <div class="signal-card" id="card_insider">
+    <div class="signal-top">
+      <div>
+        <div class="sig-name">Insider Buying — Cluster Purchases <span class="sig-badge b-t1">Signal 9 · Fundamental</span></div>
+        <div class="sig-what"><strong>What it measures:</strong> Whether company officers, directors, or 10%+ shareholders are making open-market purchases of their own stock using personal funds. This is the <em>only fundamental signal</em> in this calculator — all others measure price action or market sentiment. Insiders possess private information about future earnings, operations, and value. When multiple insiders buy simultaneously (cluster buying), their combined conviction is roughly 2× as predictive as a single purchase. Lakonishok &amp; Lee (2001, RFS): strongest-buy portfolios earned 4.8% excess returns in year 1; 7.3% for small caps.</div>
+        <div class="sig-where"><strong>Where to find it:</strong> <strong>OpenInsider.com</strong> — search your ticker, filter to transaction code "P - Purchase" in the past 90 days, count unique insider names. Also check openinsider.com/latest-cluster-buys. Alternative: Finviz.com → ticker → "Insider Trading" tab. <em>Only count open-market purchases (code P). Ignore options exercises, gifts, and 10b5-1 pre-planned trades (check the Form 4 checkbox).</em></div>
+      </div>
+      <div class="sig-input-block">
+        <div class="sig-input-lbl">Unique Insiders Buying (90 days) <a class="fn" href="#fn16" onclick="scrollFn(event,16)">16</a></div>
+        <input type="number" id="sig_insider" placeholder="e.g. 3" min="0" max="20" step="1" oninput="calc()" style="font-size:20px;">
+        <span class="field-hint">Count open-market buys only</span>
+        <a class="cboe-btn" href="https://openinsider.com/latest-cluster-buys" target="_blank">↗ OpenInsider Cluster Buys</a>
+        <div class="sig-weight">
+          <div class="sig-weight-label">Weight for strategy</div>
+          <div class="weight-bars" id="wb_insider"></div>
+          <div class="weight-val" id="wv_insider">—</div>
+        </div>
+      </div>
+      <div class="sig-score-block">
+        <div class="sig-score-lbl">Pts</div>
+        <div class="sig-score-val zero" id="pts_insider">0</div>
+        <div class="sig-max">max 1</div>
+      </div>
+    </div>
+    <div class="thresh-row">
+      <div class="tc" id="t_ins0"><div class="tc-val">0 insiders</div><div class="tc-pts">0 pts · neutral</div></div>
+      <div class="tc" id="t_ins1"><div class="tc-val">1 insider</div><div class="tc-pts">+0.25 pt · weak</div></div>
+      <div class="tc" id="t_ins2"><div class="tc-val">2 insiders</div><div class="tc-pts">+0.50 pt · moderate</div></div>
+      <div class="tc" id="t_ins3"><div class="tc-val">3+ insiders</div><div class="tc-pts">+1.0 pt · cluster buy</div></div>
+      <div class="tc" style="flex:2"><div class="tc-val" style="color:var(--muted);font-size:11px;font-weight:400">Do NOT score insider selling — insiders sell for diversification, taxes &amp; options, not from negative outlook. Only open-market purchases (Form 4, code "P") count.</div></div>
+    </div>
+    <div class="howto"><strong>Why cluster buying matters:</strong> When 3+ insiders independently commit personal capital within the same 90-day window, Alldredge &amp; Blank (2019) found abnormal returns nearly double those of solitary purchases. Cohen, Malloy &amp; Pomorski (2012, JOF) identified "opportunistic" (non-routine) insiders as the most informative — those who <em>deviate</em> from their usual trading pattern. Jeng, Metrick &amp; Zeckhauser (2003) showed ~25% of abnormal returns accrue within 5 days and ~50% within the first month. Post-SOX 2-business-day disclosure rule means data is actionable — filings appear on OpenInsider within hours of SEC publication. <strong>Key caveat:</strong> Signal concentrates in small- and mid-cap stocks (7.3% vs 1.3% for large caps per Lakonishok &amp; Lee). Treat as a tiebreaker rather than a driver for large-cap stocks.</div>
+  </div>
+
+  <!-- SCORE SUMMARY -->
+  <div style="margin-top:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Weighted Score Summary — <span id="hpLabelScore">Strategy B (6–12 mo)</span></div>
+    <div class="score-chips">
+      <div class="chip" id="chip_rsi"><div class="chip-name">RSI(5)</div><div class="chip-val" id="cv_rsi">—</div><div class="chip-pts" id="cp_rsi">— pts</div></div>
+      <div class="chip" id="chip_ma"><div class="chip-name">200-MA</div><div class="chip-val" id="cv_ma">—</div><div class="chip-pts" id="cp_ma">— pts</div></div>
+      <div class="chip" id="chip_vol"><div class="chip-name">Volume</div><div class="chip-val" id="cv_vol">—</div><div class="chip-pts" id="cp_vol">— pts</div></div>
+      <div class="chip" id="chip_z"><div class="chip-name">Z-Score</div><div class="chip-val" id="cv_z">—</div><div class="chip-pts" id="cp_z">— pts</div></div>
+      <div class="chip" id="chip_atr"><div class="chip-name">ATR</div><div class="chip-val" id="cv_atr">—</div><div class="chip-pts" id="cp_atr">— pts</div></div>
+      <div class="chip" id="chip_osc"><div class="chip-name">Oscillator</div><div class="chip-val" id="cv_osc">—</div><div class="chip-pts" id="cp_osc">— pts</div></div>
+      <div class="chip" id="chip_pc"><div class="chip-name">Put/Call</div><div class="chip-val" id="cv_pc">—</div><div class="chip-pts" id="cp_pc">— pts</div></div>
+      <div class="chip" id="chip_vix"><div class="chip-name">VIX</div><div class="chip-val" id="cv_vix">—</div><div class="chip-pts" id="cp_vix">— pts</div></div>
+      <div class="chip" id="chip_insider"><div class="chip-name">Insider Buy</div><div class="chip-val" id="cv_insider">—</div><div class="chip-pts" id="cp_insider">— pts</div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:4px;">Composite Score</div>
+        <div style="font-family:'Libre Baskerville',serif;font-size:46px;font-weight:700;line-height:1;" id="out_score">—</div>
+      </div>
+      <div style="flex:1;min-width:180px;">
+        <div class="score-bar-track"><div class="score-bar-fill" id="scoreBar" style="width:0%"></div></div>
+        <div class="score-bar-labels"><span>0 Weak</span><span>5 Moderate</span><span>10 Max</span></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);margin-top:6px;" id="out_scoreLbl">Enter signal values above</div>
+      </div>
+    </div>
+    <div class="notice n-info" id="hpDeployNote" style="margin-top:10px;">
+      <strong>Deployment thresholds for 6–12 month strategy:</strong> Score ≥7 → 100% · ≥6 → 75% · ≥5 → 50% · ≥4 → 25% · &lt;4 → Skip
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SECTION 5: RESULTS ═══ -->
+<div class="section">
+  <div class="section-header"><span class="section-num">5</span><span class="section-title">Buy Decision &amp; Amount</span></div>
+  <div class="results">
+    <div class="results-hdr">Calculated Output — <span id="res_hpLabel">Strategy B · 6–12 Months</span></div>
+    <div class="results-body">
+      <div class="result-primary">
+        <div class="rcell">
+          <div class="rcell-lbl">Weighted Score</div>
+          <div class="rcell-val" id="res_score">—</div>
+          <div class="rcell-sub" id="res_scoreLbl">/ 10</div>
+        </div>
+        <div class="rcell">
+          <div class="rcell-lbl">Deploy % <a class="fn" href="#fn13" onclick="scrollFn(event,13)">13</a></div>
+          <div class="rcell-val" id="res_deploy">—</div>
+          <div class="rcell-sub" id="res_deployLbl">of tier amount</div>
+        </div>
+        <div class="rcell">
+          <div class="rcell-lbl">Buy Amount <a class="fn" href="#fn14" onclick="scrollFn(event,14)">14</a></div>
+          <div class="rcell-val" id="res_amount">—</div>
+          <div class="rcell-sub" id="res_amountSub">Final recommendation</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+        <div id="res_badge" class="status-badge badge-skip">— Enter data above —</div>
+        <div id="res_gateNote" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);"></div>
+      </div>
+      <div id="res_notice" style="display:none;" class="notice n-ok"></div>
+      <div style="margin-top:14px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;">Full Tier Schedule — <span id="res_catLabel">Select category above</span> <a class="fn" href="#fn5" onclick="scrollFn(event,5)">5</a></div>
+        <table class="tier-table">
+          <thead><tr><th>Tier</th><th>Drawdown</th><th>Base ($)</th><th>Scaled ($) <a class="fn" href="#fn15" onclick="scrollFn(event,15)" style="text-decoration:none;">15</a></th><th>Status</th></tr></thead>
+          <tbody id="tierBody"><tr><td colspan="5" style="color:var(--muted);text-align:center;padding:18px;">Select category and enter portfolio size</td></tr></tbody>
+        </table>
+      </div>
+      <div style="margin-top:18px;">
+        <div class="rrow"><span class="rrow-lbl">Ticker</span><span class="rrow-val" id="s_ticker">—</span></div>
+        <div class="rrow"><span class="rrow-lbl">Category</span><span class="rrow-val" id="s_cat">—</span></div>
+        <div class="rrow"><span class="rrow-lbl">Strategy</span><span class="rrow-val" id="s_strategy">—</span></div>
+        <div class="rrow"><span class="rrow-lbl">Current Price</span><span class="rrow-val" id="s_price">—</span></div>
+        <div class="rrow"><span class="rrow-lbl">Drawdown from High</span><span class="rrow-val" id="s_dd">—</span></div>
+        <div class="rrow"><span class="rrow-lbl">Gate Multiplier (MA)</span><span class="rrow-val" id="s_gate">—</span></div>
+        <div class="rrow"><span class="rrow-lbl">Next Tier Trigger Price</span><span class="rrow-val" id="s_next">—</span></div>
+        <div class="rrow"><span class="rrow-lbl">Max Position Size</span><span class="rrow-val" id="s_maxpos">—</span></div>
+        <div class="rrow"><span class="rrow-lbl">Cash Remaining After Buy</span><span class="rrow-val" id="s_cashafter">—</span></div>
+        <div class="rrow"><span class="rrow-lbl">Above Black Swan Floor?</span><span class="rrow-val" id="s_floor">—</span></div>
+      </div>
+    </div>
+  </div>
+  <button class="btn-reset" onclick="resetAll()">↺ Reset Calculator</button>
+</div>
+
+<!-- ═══ FOOTNOTES ═══ -->
+<div class="fn-section">
+  <div class="fn-title">Formula Footnotes &amp; Academic Sources</div>
+
+  <div class="fn-group">
+    <div class="fn-group-title">Portfolio &amp; Stock Inputs (Sections 1–3)</div>
+
+    <div class="fn-item" id="fn1">
+      <div class="fn-num">1</div>
+      <div>
+        <div class="fn-formula">Black Swan Floor = Cash Reserve <span class="op">×</span> 0.175</div>
+        <div class="fn-ex">$50,000 × 0.175 = <span class="res">$8,750</span></div>
+        <div class="fn-note">Reserves 17.5% of cash as untouchable emergency fund for drawdowns exceeding −40%. Historical bear markets average −33% over 406 days; the worst reached −57%. Morgan Stanley (2025) found 54% of individual stocks never return to prior highs — this buffer preserves capital for those events.</div>
+      </div>
+    </div>
+
+    <div class="fn-item" id="fn2">
+      <div class="fn-num">2</div>
+      <div>
+        <div class="fn-formula">ATR% = ATR(14) <span class="op">÷</span> Current Price <span class="op">×</span> 100</div>
+        <div class="fn-ex">ATR = $3.33, Price = $185 → 3.33 ÷ 185 × 100 = <span class="res">1.80%</span></div>
+        <div class="fn-note">Converts ATR from dollars to a percentage so it is comparable across different-priced stocks. The "ATR%" indicator on TradingView performs this calculation automatically.</div>
+        <div class="fn-where">📍 TradingView → Indicators → search "ATR%" → reads directly as a percentage</div>
+      </div>
+    </div>
+
+    <div class="fn-item" id="fn3">
+      <div class="fn-num">3</div>
+      <div>
+        <div class="fn-formula">Drawdown % = (Recent High <span class="op">−</span> Current Price) <span class="op">÷</span> Recent High <span class="op">×</span> 100</div>
+        <div class="fn-ex">High = $210, Price = $185 → (210 − 185) ÷ 210 × 100 = <span class="res">11.90%</span></div>
+        <div class="fn-note">Uses the highest closing price in the past 252 trading days (~1 year). Auto-calculated from Section 3 inputs.</div>
+      </div>
+    </div>
+
+    <div class="fn-item" id="fn4">
+      <div class="fn-num">4</div>
+      <div>
+        <div class="fn-formula">Buy Interval = 2 <span class="op">×</span> ATR% <span class="op">×</span> 1.75</div>
+        <div class="fn-ex">ATR% = 1.8% → 2 × 1.8 × 1.75 = <span class="res">6.3% interval</span></div>
+        <div class="fn-note">Calibrates tier spacing to the stock's natural daily volatility. A 5% drop in a utility stock is meaningful; the same move in a high-beta tech name is noise. The 1.75 multiplier prevents triggers on routine daily swings.</div>
+      </div>
+    </div>
+
+    <div class="fn-item" id="fn5">
+      <div class="fn-num">5</div>
+      <div>
+        <div class="fn-formula">Tier fires when Drawdown% <span class="op">≥</span> Tier# <span class="op">×</span> Interval%</div>
+        <div class="fn-ex">Interval = 6.3%: T1 at −6.3% | T2 at −12.6% | T3 at −18.9% | T4 at −25.2% | T5 at −31.5%</div>
+        <div class="fn-note">Each tier fires at a cumulative multiple of the interval. If drawdown is 14% and interval is 6.3%: Tier 2 triggered (2 × 6.3 = 12.6% ≤ 14%); Tier 3 not yet (18.9% > 14%).</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fn-group">
+    <div class="fn-group-title">Signal Formulas (Section 4) — v2 Academic Corrections Applied</div>
+
+    <div class="fn-item" id="fn6">
+      <div class="fn-num">6</div>
+      <div>
+        <div class="fn-formula">RSI(n) = 100 <span class="op">−</span> 100 <span class="op">÷</span> (1 <span class="op">+</span> Avg&nbsp;Gain <span class="op">÷</span> Avg&nbsp;Loss) over n periods</div>
+        <div class="fn-ex">RSI(5) = 12 → below 20 → <span class="res">+1 point</span> (at 6–12 month hold, weighted 0.15×)</div>
+        <div class="fn-note">Avg Gain = average of all up-closes over the last 5 periods. Avg Loss = average of all down-closes (positive number). Always read from a charting platform — never attempt manual calculation.</div>
+        <div class="fn-correction">⚠ v2 Correction: Thresholds shifted lower from 30/20/10 to 20/10/5. Connors' research (2008) is proprietary and not peer-reviewed. The signal is designed for &lt;2 week holding periods and actively counterproductive at 3–12 month horizons (Jegadeesh &amp; Titman 1993). Weight is reduced significantly for medium and long-term strategies.</div>
+        <div class="fn-where">📍 TradingView → Indicators → RSI → change Length from 14 to 5</div>
+      </div>
+    </div>
+
+    <div class="fn-item" id="fn7">
+      <div class="fn-num">7</div>
+      <div>
+        <div class="fn-formula">MA Distance % = (Price <span class="op">−</span> 200-Day MA) <span class="op">÷</span> 200-Day MA <span class="op">×</span> 100</div>
+        <div class="fn-ex">Price = $185, MA = $178 → (185−178) ÷ 178 × 100 = <span class="res">+3.9%</span> (above, +2 pts, mult 1.0)</div>
+        <div class="fn-ex" style="margin-top:4px;">Price = $170, MA = $178 → (170−178) ÷ 178 × 100 = <span class="res">−4.5%</span> (0–5% below, +1.5 pts, mult 1.0)</div>
+        <div class="fn-note">Calculated from your entered MA value vs. current price. Gate Multiplier scales the final buy amount based on distance below MA.</div>
+        <div class="fn-correction">⚠ v2 Correction: Binary above/below gate replaced with distance-based scoring. Avramov, Kaplanski &amp; Subrahmanyam (2021, Review of Financial Studies) found stocks further below their 200-MA predict higher returns via anchoring bias — 8.35% annual alpha at 3-month horizon. However, &gt;20% below = value-trap territory (54% never recover).</div>
+        <div class="fn-where">📍 Finviz.com → ticker page → "200-Day MA" field | Or TradingView → Indicators → MA → Length 200</div>
+      </div>
+    </div>
+
+    <div class="fn-item" id="fn8">
+      <div class="fn-num">8</div>
+      <div>
+        <div class="fn-formula">Volume Ratio = Today's Volume <span class="op">÷</span> 20-Day Average Volume</div>
+        <div class="fn-ex">85,000,000 ÷ 37,000,000 = <span class="res">2.30×</span> → capitulation → +2 pts</div>
+        <div class="fn-note">Campbell, Grossman &amp; Wang (1993, QJE): high-volume down days reverse because risk-averse market makers demand temporary price concessions. Effect is strongest at 1-day horizon, persists ~20 trading days (Gervais, Kaniel &amp; Mingelgrin 2001), essentially zero beyond 3 months. Best confirmation: candle closes above its intraday low (hammer pattern).</div>
+        <div class="fn-where">📍 Today's volume: Yahoo Finance quote page | 20-day avg: Finviz.com "Avg Volume" field</div>
+      </div>
+    </div>
+
+    <div class="fn-item" id="fn9">
+      <div class="fn-num">9</div>
+      <div>
+        <div class="fn-formula">Z-Score = (Current Price <span class="op">−</span> 20-Day SMA) <span class="op">÷</span> 20-Day Standard Deviation</div>
+        <div class="fn-ex">Price = $185, SMA = $196, StdDev = $5.30 → (185 − 196) ÷ 5.30 = <span class="res">−2.08</span> → +0.75 pts</div>
+        <div class="fn-note"><strong>Note on units:</strong> StdDev IS expressed in dollars (same units as price). The division of a dollar value by a dollar value produces a dimensionless (unitless) Z-score. This is correct. Poterba &amp; Summers (1988): transitory price components with StdDev 15–25% account for &gt;50% of monthly return variance, supporting mean-reversion basis for this signal.</div>
+        <div class="fn-correction">⚠ v2 Correction: Weight dramatically reduced for 3–6 month holds. At intermediate horizons (3–12 months), stocks with strongly negative Z-scores have negative momentum that PERSISTS (Jegadeesh &amp; Titman 1993). Mean reversion only reliably dominates beyond 12–18 months (Fama &amp; French 1988). Weight is highest for 1+ year strategies.</div>
+      </div>
+    </div>
+
+    <div class="fn-item" id="fn10">
+      <div class="fn-num">10</div>
+      <div>
+        <div class="fn-formula">ATR Ratio = Today's ATR(14) <span class="op">÷</span> 20-Day Average of ATR(14)</div>
+        <div class="fn-ex">Today ATR = $4.80, 20-day avg ATR = $3.10 → 4.80 ÷ 3.10 = <span class="res">1.55×</span> → +0.5 pts</div>
+        <div class="fn-note">Volatility mean-reversion (GARCH literature): half-life ~23 days for equity volatility. Most of the ATR spike resolves within 75 days. CrackingMarkets research found normalized ATR during a dip is a better predictor of subsequent profit than dip depth itself.</div>
+        <div class="fn-correction">⚠ v2 Correction: Threshold raised from 1.5× to 1.65× per SentimenTrader's tested reversal concept. Max raised to 1.0 pts (from 0.5) with graduated scoring. Signal best at 1–4 months; rapidly diminishing beyond that.</div>
+        <div class="fn-where">📍 TradingView → Indicators → ATR (length 14) → read today's value from the chart legend</div>
+      </div>
+    </div>
+
+    <div class="fn-item" id="fn11">
+      <div class="fn-num">11</div>
+      <div>
+        <div class="fn-formula">Oscillator = 20-Day SMA <span class="op">÷</span> 252-Day SMA</div>
+        <div class="fn-ex">20-day SMA = $191.50, 252-day SMA = $196.80 → 191.50 ÷ 196.80 = <span class="res">0.973</span> → ≥ 0.95 → +1.0 pt</div>
+        <div class="fn-note">20 trading days ≈ 4 calendar weeks. 252 trading days ≈ 1 trading year. In Excel: =AVERAGE(last 20 closes) / AVERAGE(last 252 closes).</div>
+        <div class="fn-correction">⚠ v2 Major Correction: Direction INVERTED from previous version. S&P Global (2018) study found that among dip stocks, those with HIGHER oscillator values (maintaining better relative trend) predicted better 240-day forward returns — 49.33% for top half vs 28.40% for all dip stocks. The study used EMA not SMA and ranked by relative percentile, not an absolute 0.95 threshold. Higher oscillator = stock held its trend despite the dip = better candidate.</div>
+      </div>
+    </div>
+
+    <div class="fn-item" id="fn12">
+      <div class="fn-num">12</div>
+      <div>
+        <div class="fn-formula">VIX Spike Ratio = Current VIX <span class="op">÷</span> VIX 20-Day Moving Average</div>
+        <div class="fn-ex">VIX = 32, 20-day avg VIX = 20 → 32 ÷ 20 = <span class="res">1.60×</span> → ≥ 1.5× → +0.5 pt bonus</div>
+        <div class="fn-note">Bansal &amp; Stivers (2025, Financial Management): nonlinear VIX threshold approach "appreciably and consistently outperforms linear VIX approaches." Combined VIX threshold + Baker-Wurgler sentiment explained R²=19% of 6-month returns and R²=29% of 12-month returns. Spike detection identifies when VIX is unusually high relative to its own recent history — more predictive than absolute levels alone.</div>
+        <div class="fn-where">📍 VIX 20-day average: TradingView → search VIX → add SMA indicator, length 20</div>
+      </div>
+    </div>
+  </div>
+
+
+    <div class="fn-item" id="fn16">
+      <div class="fn-num">16</div>
+      <div>
+        <div class="fn-formula">Insider Buy Score = f(Unique Insiders Buying, past 90 days)</div>
+        <div class="fn-ex">3 insiders buy in 90 days = <span class="res">+1.0 pt</span> (cluster buy · peak signal · Strategy B weight 1.5×)</div>
+        <div class="fn-note"><strong>Scoring tiers:</strong> 0 insiders = 0 pts · 1 insider = +0.25 pts · 2 insiders = +0.50 pts · 3+ insiders = +1.0 pts (cluster). <strong>Key studies:</strong> Lakonishok &amp; Lee (2001, RFS): strong-buy insider portfolios earned 4.8% annual excess returns (7.3% for small-caps). Jeng, Metrick &amp; Zeckhauser (2003, REStat): 4-factor alpha of 52 bps/month (~6.4% annualized) for insider purchases. Cohen, Malloy &amp; Pomorski (2012, JOF): opportunistic (non-routine) insiders earned 82 bps/month value-weighted (9.8% annualized). Alldredge &amp; Blank (2019): cluster purchases earned 2.1% vs 1.2% abnormal returns in the following month. <strong>Critical rule:</strong> Only count open-market purchases (Form 4 transaction code "P"). Exclude options exercises, gifts, inheritances, and 10b5-1 pre-planned trades. Insider selling is not a negative signal — insiders sell for diversification, tax reasons, and option exercises.</div>
+        <div class="fn-correction">⚠ Small-cap caveat: Signal is strongest for small-caps (7.3% excess return) and weak for large-caps (1.3%, statistically insignificant per Lakonishok &amp; Lee). Weight accordingly — for mega-cap stocks, treat this as a tiebreaker rather than a primary signal.</div>
+        <div class="fn-where">📍 Free data: OpenInsider.com (best — search ticker, filter to "P" transactions, count unique names) · Finviz.com → ticker → Insider Trading tab · SEC EDGAR Form 4 filings at efts.sec.gov/LATEST/search-index?q=%22form+type%22%3A%224%22&dateRange=custom (free JSON API, no key needed)</div>
+      </div>
+    </div>
+
+  <div class="fn-group">
+    <div class="fn-group-title">Buy Amount Formulas (Section 5)</div>
+
+    <div class="fn-item" id="fn13">
+      <div class="fn-num">13</div>
+      <div>
+        <div class="fn-formula">Deploy % = f(Composite Score, Holding Period Strategy)</div>
+        <div class="fn-ex">Strategy B, Score = 6.5 → Deploy = <span class="res">75%</span> of scaled tier amount</div>
+        <div class="fn-note">Deployment thresholds are stricter for shorter holding periods (Strategy C) because noise dominates signal at those horizons (Campbell &amp; Shiller 1988 — R² approaches zero at monthly horizons). At 1+ year horizons, fundamental predictability is meaningfully higher so moderate signal confluence already justifies deployment. Grounded in fractional Kelly Criterion theory (MacLean, Thorp &amp; Ziemba 2010).</div>
+      </div>
+    </div>
+
+    <div class="fn-item" id="fn14">
+      <div class="fn-num">14</div>
+      <div>
+        <div class="fn-formula">Final Buy Amount = Scaled Tier <span class="op">×</span> Deploy % <span class="op">×</span> Gate Multiplier</div>
+        <div class="fn-ex">Scaled = $3,500 × 75% × 1.0 (above MA) = <span class="res">$2,625</span></div>
+        <div class="fn-ex" style="margin-top:4px;">Same, 8% below MA (mult 0.75) → $3,500 × 75% × 0.75 = <span class="res">$1,969</span></div>
+        <div class="fn-note">Three multipliers control the output: (1) drawdown depth → tier, (2) composite score → deploy %, (3) MA distance → gate multiplier. All three must align for a full-size purchase.</div>
+      </div>
+    </div>
+
+    <div class="fn-item" id="fn15">
+      <div class="fn-num">15</div>
+      <div>
+        <div class="fn-formula">Scaled Tier Amount = Base Amount <span class="op">×</span> (Portfolio Size <span class="op">÷</span> 200,000)</div>
+        <div class="fn-ex">Base = $5,500, Portfolio = $100,000 → 5,500 × (100,000 ÷ 200,000) = <span class="res">$2,750</span></div>
+        <div class="fn-note">All tier amounts are calibrated to a $200,000 reference portfolio and scale proportionally. A $50K portfolio deploys 25% of base amounts; a $400K portfolio deploys 200%. Consistent risk exposure across all portfolio sizes.</div>
+      </div>
+    </div>
+  </div>
+</div><!-- end fn-section -->
+
+</div><!-- end .page -->
+
+<script>
+// ══════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════
+const REF = 200000;
+const TIERS = {
+  dividend:{ label:'Dividend / Value',    intervals:[4,8,12,16,20],   amounts:[2500,4000,6000,5000,3500] },
+  bluechip:{ label:'Large-Cap / Blue Chip', intervals:[6,12,18,24,30], amounts:[2000,3500,5500,5000,4000] },
+  growth:{   label:'Growth / Tech',       intervals:[10,20,30,40,50], amounts:[1500,3000,5000,5000,3500] }
+};
+
+// Signal max base scores
+const SMAXES = { rsi:3, ma:2, vol:2, z:1, atr:1, osc:1, pc:1, vix:1.5, insider:1.0 };
+
+// Holding period configurations (weights and deploy thresholds)
+const HP = {
+  C:{ label:'3–6 Months', tag:'Strategy C · Short-Term',
+      icon:'⚡', ddMatch:'10–20% (shallow dips)',
+      regimeNote:'Momentum regime — ATR expansion & price oscillator dominate. RSI & Z-Score work against you here (negative momentum persists 3–12 mo per Jegadeesh & Titman 1993).',
+      bestSigs:'MA Distance · ATR · Oscillator · VIX · Insider Buy',
+      weights:{ rsi:0.25, ma:1.50, vol:0.50, z:0.25, atr:1.50, osc:1.50, pc:0.50, vix:1.25, insider:1.00 },
+      deploy:[[8,1.00,'100% — high conviction'],[7,0.75,'75%'],[6,0.50,'50%'],[5,0.25,'25%'],[0,0,'Skip — insufficient signals']],
+      deployNote:'≥8 → 100% · ≥7 → 75% · ≥6 → 50% · ≥5 → 25% · &lt;5 → Skip (stricter — noise dominates at short horizons)',
+      maxPosMult:0.08 },
+  B:{ label:'6–12 Months', tag:'Strategy B · Medium-Term',
+      icon:'📊', ddMatch:'20–40% (moderate dips)',
+      regimeNote:'Transition zone — VIX threshold peaks at R²=29% for 12-month returns (Bansal & Stivers 2025). Insider buying peaks here. Price oscillator remains strong. Z-Score begins contributing month 9+.',
+      bestSigs:'VIX · MA Distance · Oscillator · Insider Buying',
+      weights:{ rsi:0.15, ma:1.25, vol:0.25, z:0.50, atr:0.75, osc:1.25, pc:0.25, vix:1.50, insider:1.50 },
+      deploy:[[7,1.00,'100%'],[6,0.75,'75%'],[5,0.50,'50%'],[4,0.25,'25%'],[0,0,'Skip']],
+      deployNote:'≥7 → 100% · ≥6 → 75% · ≥5 → 50% · ≥4 → 25% · &lt;4 → Skip  (signals: VIX, MA Distance, Oscillator, Insider Buy peak here)',
+      maxPosMult:0.12 },
+  A:{ label:'1+ Year', tag:'Strategy A · Long-Term',
+      icon:'⏳', ddMatch:'40%+ (deep dips)',
+      regimeNote:'Mean-reversion regime — Z-Score rehabilitated (DeBondt & Thaler 1985). More lenient deployment thresholds since fundamental predictability is higher (Campbell & Shiller R²=20%+ at 4–5 year horizon). Put/Call removed (too short-term).',
+      bestSigs:'Z-Score · VIX · MA Distance · Insider Buy',
+      weights:{ rsi:0.10, ma:1.00, vol:0.10, z:1.25, atr:0.25, osc:0.50, pc:0.00, vix:1.25, insider:1.00 },
+      deploy:[[6,1.00,'100%'],[5,0.75,'75%'],[4,0.50,'50%'],[3,0.25,'25%'],[0,0,'Skip']],
+      deployNote:'≥6 → 100% · ≥5 → 75% · ≥4 → 50% · ≥3 → 25% · &lt;3 → Skip (more lenient — stronger signal at long horizons)',
+      maxPosMult:0.15 }
+};
+
+// ══════════════════════════════════════
+// SIGNAL SCORING (v2 academic corrections)
+// ══════════════════════════════════════
+function scoreRSI(v){
+  if(isNaN(v)) return 0;
+  if(v < 5)  return 3;   // shifted from 10 to 5
+  if(v < 10) return 2;   // shifted from 20 to 10
+  if(v < 20) return 1;   // shifted from 30 to 20
+  return 0;
+}
+
+function scoreMA(distPct){
+  // distPct: positive = above, negative = below
+  if(isNaN(distPct)) return { pts:0, gate:1.0, zone:'unknown' };
+  if(distPct >= 0)    return { pts:2.0, gate:1.00, zone:'above' };
+  if(distPct >= -5)   return { pts:1.5, gate:1.00, zone:'0-5% below' };
+  if(distPct >= -10)  return { pts:1.0, gate:0.75, zone:'5-10% below' };
+  if(distPct >= -20)  return { pts:0.5, gate:0.50, zone:'10-20% below' };
+  return                     { pts:0.0, gate:0.25, zone:'>20% below (trap risk)' };
+}
+
+function scoreVol(r){
+  if(isNaN(r)||r<=0) return 0;
+  if(r >= 2.0) return 2;
+  if(r >= 1.5) return 1;
+  return 0;
+}
+
+function scoreZ(z){
+  if(isNaN(z)) return 0;
+  if(z <= -3.0) return 1.00;
+  if(z <= -2.0) return 0.75;
+  if(z <= -1.5) return 0.25;
+  return 0;
+}
+
+function scoreATR(r){
+  // Threshold raised to 1.65x per academic correction
+  if(isNaN(r)||r<=0) return 0;
+  if(r >= 2.0)  return 1.00;
+  if(r >= 1.65) return 0.75;
+  if(r >= 1.50) return 0.50;
+  return 0;
+}
+
+function scoreOsc(o){
+  // CORRECTED: higher = better (S&P Global 2018)
+  if(isNaN(o)||o<=0) return 0;
+  if(o >= 0.95) return 1.0;
+  if(o >= 0.85) return 0.5;
+  return 0;
+}
+
+function scorePC(p){
+  // Updated to 1.23 (95th percentile) per academic correction
+  if(isNaN(p)||p<=0) return 0;
+  if(p >= 1.50) return 1.0;
+  if(p >= 1.23) return 0.5;
+  return 0;
+}
+
+
+function scoreInsider(n){
+  // n = unique insiders making open-market purchases past 90 days
+  if(isNaN(n)||n<0) return 0;
+  if(n >= 3) return 1.00;  // cluster buy — 2× effect size (Alldredge & Blank 2019)
+  if(n === 2) return 0.50;
+  if(n === 1) return 0.25;
+  return 0;
+}
+function scoreVIX(v, avg){
+  if(isNaN(v)||v<=0) return 0;
+  let pts = 0;
+  if(v >= 45) pts += 1.0;
+  else if(v >= 30) pts += 0.5;
+  // Relative spike detection (Bansal & Stivers)
+  if(!isNaN(avg) && avg > 0){
+    const ratio = v / avg;
+    if(ratio >= 1.5)  pts += 0.5;
+    else if(ratio >= 1.25) pts += 0.25;
+  }
+  return Math.min(pts, 1.5);
+}
+
+// ══════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════
+function fmt$(n){ return n==null||isNaN(n)?'—':'$'+Math.round(n).toLocaleString(); }
+function getHP(){ return document.querySelector('input[name="hp"]:checked')?.value || 'B'; }
+function getDeployPct(score, tiers){
+  for(const [minS, pct] of tiers) if(score >= minS) return pct;
+  return 0;
+}
+function getDeployLabel(score, tiers){
+  for(const [minS, pct, lbl] of tiers) if(score >= minS) return lbl;
+  return 'Skip';
+}
+
+// Weight bar display
+function setWeightBars(id_bars, id_val, weight){
+  const el = document.getElementById(id_bars);
+  const vl = document.getElementById(id_val);
+  if(!el||!vl) return;
+  const pct = Math.min(weight / 1.5, 1.0);
+  const bars = Math.round(pct * 3);
+  let html = '';
+  for(let i=0;i<3;i++){
+    const cls = i < bars ? 'wb on' : weight > 0 && i === 0 ? 'wb half' : 'wb';
+    html += `<div class="${cls}"></div>`;
+  }
+  el.innerHTML = html;
+  vl.textContent = weight === 0 ? 'Not used' : weight.toFixed(2) + '×';
+  vl.style.color = weight >= 1.25 ? '#0d0d0d' : weight >= 0.5 ? '#666' : '#aaa';
+}
+
+function setPts(id, pts){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.textContent = pts > 0 ? '+' + pts.toFixed(2).replace('.00','').replace(/\.?0+$/,'') : '0';
+  el.className = 'sig-score-val ' + (pts > 0 ? 'active' : 'zero');
+}
+
+function litThresh(id, on){
+  const el = document.getElementById(id);
+  if(!el) return;
+  on ? el.classList.add('lit') : el.classList.remove('lit');
+}
+
+function setChip(id, val, pts, maxW){
+  const c=document.getElementById('chip_'+id);
+  const v=document.getElementById('cv_'+id);
+  const p=document.getElementById('cp_'+id);
+  if(!c||!v||!p) return;
+  v.textContent = val || '—';
+  p.textContent = pts > 0 ? '+' + pts.toFixed(2) + ' pts' : '— pts';
+  pts > 0 ? c.classList.add('active') : c.classList.remove('active');
+}
+
+function scrollFn(e, n){
+  e.preventDefault();
+  const el = document.getElementById('fn'+n);
+  if(!el) return;
+  el.scrollIntoView({behavior:'smooth', block:'center'});
+  el.style.background = '#fffbe6';
+  setTimeout(()=>{ el.style.background=''; }, 2200);
+}
+
+// ══════════════════════════════════════
+// HP CHANGE — update regime banner, weights, thresholds
+// ══════════════════════════════════════
+function onHPChange(){
+  const hpKey = getHP();
+  const hp = HP[hpKey];
+  document.getElementById('regimeIcon').textContent = hp.icon;
+  document.getElementById('regimeTitle').textContent = hp.tag;
+  document.getElementById('regimeNote').textContent = hp.regimeNote;
+  document.getElementById('regimeBest').textContent = hp.bestSigs;
+  document.getElementById('hpLabelScore').textContent = hp.tag;
+  document.getElementById('hpDeployNote').innerHTML = `<strong>Deployment thresholds for ${hp.label} strategy:</strong> ${hp.deployNote}`;
+
+  // Update weight bars for each signal
+  const w = hp.weights;
+  setWeightBars('wb_rsi','wv_rsi', w.rsi);
+  setWeightBars('wb_ma', 'wv_ma',  w.ma);
+  setWeightBars('wb_vol','wv_vol', w.vol);
+  setWeightBars('wb_z',  'wv_z',   w.z);
+  setWeightBars('wb_atr','wv_atr', w.atr);
+  setWeightBars('wb_osc','wv_osc', w.osc);
+  setWeightBars('wb_pc', 'wv_pc',  w.pc);
+  setWeightBars('wb_vix','wv_vix', w.vix);
+  setWeightBars('wb_insider','wv_insider', w.insider);
+
+  // Mute cards with zero weight
+  ['pc'].forEach(sig => {
+    const card = document.getElementById('card_'+sig);
+    if(!card) return;
+    w[sig] === 0 ? card.classList.add('muted-card') : card.classList.remove('muted-card');
+  });
+
+  document.getElementById('out_ddMatch').textContent = hp.ddMatch;
+  calc();
+}
+
+// ══════════════════════════════════════
+// STOCK CATEGORY CLASSIFIER
+// ══════════════════════════════════════
+function toggleAccordion(){
+  const body = document.getElementById('catBody');
+  const arrow = document.getElementById('catArrow');
+  const isOpen = body.classList.contains('open');
+  isOpen ? body.classList.remove('open') : body.classList.add('open');
+  isOpen ? arrow.classList.remove('open') : arrow.classList.add('open');
+}
+
+function classifyStock(){
+  const div = parseFloat(document.getElementById('ch_div').value);
+  const cap = parseFloat(document.getElementById('ch_cap').value);
+  const grw = parseFloat(document.getElementById('ch_growth').value);
+  const beta= parseFloat(document.getElementById('ch_beta').value);
+
+  if(isNaN(div) && isNaN(cap) && isNaN(grw) && isNaN(beta)){
+    document.getElementById('catResult').style.display='none'; return;
+  }
+
+  let dScore=0, bScore=0, gScore=0;
+  const reasons=[];
+
+  if(!isNaN(div)){
+    if(div > 2.5)      { dScore += 3; reasons.push('High dividend yield (>2.5%)'); }
+    else if(div > 0.5) { bScore += 1; reasons.push('Moderate dividend (0.5–2.5%)'); }
+    else               { gScore += 2; reasons.push('Low/no dividend'); }
+  }
+  if(!isNaN(cap)){
+    if(cap > 200)      { bScore += 2; dScore += 1; reasons.push('Mega-cap (>$200B)'); }
+    else if(cap > 50)  { bScore += 2; reasons.push('Large-cap ($50–200B)'); }
+    else if(cap > 10)  { bScore += 1; reasons.push('Mid-cap ($10–50B)'); }
+    else               { gScore += 2; reasons.push('Small/mid-cap (<$10B)'); }
+  }
+  if(!isNaN(grw)){
+    if(grw > 20)       { gScore += 3; reasons.push('High revenue growth (>20%)'); }
+    else if(grw > 10)  { gScore += 1; bScore += 1; reasons.push('Moderate growth (10–20%)'); }
+    else if(grw >= 0)  { bScore += 1; dScore += 1; reasons.push('Low growth (0–10%)'); }
+    else               { dScore += 2; reasons.push('Negative/flat revenue'); }
+  }
+  if(!isNaN(beta)){
+    if(beta > 1.4)     { gScore += 2; reasons.push('High beta (>1.4)'); }
+    else if(beta > 0.9){ bScore += 1; reasons.push('Market beta (0.9–1.4)'); }
+    else               { dScore += 2; reasons.push('Low beta (<0.9) — defensive'); }
+  }
+
+  let cat='bluechip', catLabel='Large-Cap / Blue Chip';
+  if(dScore > bScore && dScore > gScore){ cat='dividend'; catLabel='Dividend / Value'; }
+  else if(gScore > bScore && gScore > dScore){ cat='growth'; catLabel='Growth / Tech'; }
+
+  const note = reasons.slice(0,3).join(' · ') + '. Confidence: ' +
+    Math.round(Math.max(dScore,bScore,gScore) / (dScore+bScore+gScore+0.01) * 100) + '%';
+
+  document.getElementById('catResult').style.display='flex';
+  document.getElementById('catResultVal').textContent = catLabel;
+  document.getElementById('catResultNote').textContent = note;
+  document.getElementById('catResult').dataset.cat = cat;
+  document.getElementById('catBadge').textContent = catLabel;
+}
+
+function applyCategory(){
+  const cat = document.getElementById('catResult').dataset.cat;
+  if(cat){
+    document.getElementById('stockCat').value = cat;
+    calc();
+  }
+}
+
+// ══════════════════════════════════════
+// MAIN CALCULATE
+// ══════════════════════════════════════
+function calc(){
+  const hpKey = getHP();
+  const hp = HP[hpKey];
+  const w = hp.weights;
+
+  // Portfolio
+  const portSize = parseFloat(document.getElementById('portSize').value) || 0;
+  const cashRes  = parseFloat(document.getElementById('cashRes').value) || 0;
+  const category = document.getElementById('stockCat').value;
+  const ticker   = (document.getElementById('ticker').value||'').toUpperCase() || '—';
+
+  // Portfolio outputs
+  const bsFloor = cashRes > 0 ? Math.round(cashRes * 0.175) : null;
+  document.getElementById('out_bsf').textContent = bsFloor ? fmt$(bsFloor) : '—';
+  document.getElementById('out_ddMatch').textContent = hp.ddMatch;
+  document.getElementById('out_maxPos').textContent = portSize > 0 ? fmt$(portSize * hp.maxPosMult) + ' ('+(hp.maxPosMult*100)+'%)' : '—';
+
+  // Stock
+  const atrPct  = parseFloat(document.getElementById('atrPct').value)  || 0;
+  const curPrice= parseFloat(document.getElementById('curPrice').value) || 0;
+  const recHigh = parseFloat(document.getElementById('recHigh').value)  || 0;
+
+  const interval = atrPct > 0 ? +(2 * atrPct * 1.75).toFixed(1) : null;
+  document.getElementById('out_interval').textContent = interval ? interval.toFixed(1)+'%' : '—';
+
+  let ddPct = null;
+  if(curPrice > 0 && recHigh > 0 && curPrice <= recHigh)
+    ddPct = ((recHigh - curPrice) / recHigh) * 100;
+  document.getElementById('out_dd').textContent = ddPct != null ? '–'+ddPct.toFixed(1)+'%' : '—';
+
+  // Tier
+  let tierIdx = -1;
+  if(category && interval && ddPct != null){
+    const td = TIERS[category];
+    for(let i = td.intervals.length-1; i >= 0; i--)
+      if(ddPct >= td.intervals[i]){ tierIdx = i; break; }
+  }
+  document.getElementById('out_tier').textContent = tierIdx >= 0 ? 'Tier '+(tierIdx+1) : (ddPct!=null && interval ? 'Not triggered' : '—');
+
+  let scaledAmt = 0;
+  if(tierIdx >= 0 && portSize > 0 && category)
+    scaledAmt = Math.round(TIERS[category].amounts[tierIdx] * (portSize / REF));
+
+  // ── Signal inputs
+  const rsiV = parseFloat(document.getElementById('sig_rsi').value);
+  const maV  = parseFloat(document.getElementById('sig_ma').value);
+  const volV = parseFloat(document.getElementById('sig_vol').value);
+  const zV   = parseFloat(document.getElementById('sig_z').value);
+  const atrV = parseFloat(document.getElementById('sig_atr').value);
+  const oscV = parseFloat(document.getElementById('sig_osc').value);
+  const pcV  = parseFloat(document.getElementById('sig_pc').value);
+  const vixV = parseFloat(document.getElementById('sig_vix').value);
+  const vixAvg= parseFloat(document.getElementById('sig_vix_avg').value);
+  const insiderV= parseInt(document.getElementById('sig_insider').value);
+
+  // MA distance
+  let maDistPct = NaN;
+  if(!isNaN(maV) && maV > 0 && curPrice > 0)
+    maDistPct = (curPrice - maV) / maV * 100;
+
+  // ── Base scores
+  const bRSI = scoreRSI(rsiV);
+  const bMA  = scoreMA(maDistPct);
+  const bVol = scoreVol(volV);
+  const bZ   = scoreZ(zV);
+  const bATR = scoreATR(atrV);
+  const bOsc = scoreOsc(oscV);
+  const bPC  = scorePC(pcV);
+  const bVIX = scoreVIX(vixV, vixAvg);
+  const bInsider = scoreInsider(insiderV);
+
+  // ── Weighted scores
+  const wRSI = bRSI  * w.rsi;
+  const wMA  = bMA.pts * w.ma;
+  const wVol = bVol  * w.vol;
+  const wZ   = bZ    * w.z;
+  const wATR = bATR  * w.atr;
+  const wOsc = bOsc  * w.osc;
+  const wPC  = bPC   * w.pc;
+  const wVIX = bVIX  * w.vix;
+  const wInsider = bInsider * w.insider;
+
+  const wTotal = wRSI + wMA + wVol + wZ + wATR + wOsc + wPC + wVIX + wInsider;
+  const wMax   = SMAXES.rsi*w.rsi + SMAXES.ma*w.ma + SMAXES.vol*w.vol + SMAXES.z*w.z
+               + SMAXES.atr*w.atr + SMAXES.osc*w.osc + SMAXES.pc*w.pc + SMAXES.vix*w.vix
+               + SMAXES.insider*w.insider;
+  const normScore = wMax > 0 ? Math.min((wTotal / wMax) * 10, 10) : 0;
+
+  // ── Gate multiplier
+  const gateMult = bMA.gate;
+  const gateZone = bMA.zone;
+
+  // ── Deploy %
+  const deployRaw = getDeployPct(normScore, hp.deploy);
+  const deployPct = deployRaw * gateMult;
+  const deployLbl = getDeployLabel(normScore, hp.deploy);
+
+  // ── Final amount
+  const finalAmt = scaledAmt > 0 ? Math.round(scaledAmt * deployPct) : 0;
+  const cashAfter = cashRes > 0 && finalAmt > 0 ? cashRes - finalAmt : null;
+  const belowFloor = bsFloor && cashAfter != null && cashAfter < bsFloor;
+
+  // ══ UPDATE SIGNAL UI ══
+  setPts('pts_rsi', bRSI);
+  setPts('pts_ma',  bMA.pts);
+  setPts('pts_vol', bVol);
+  setPts('pts_z',   bZ);
+  setPts('pts_atr', bATR);
+  setPts('pts_osc', bOsc);
+  setPts('pts_pc',  bPC);
+  setPts('pts_vix', bVIX);
+  setPts('pts_insider', bInsider);
+
+  // Threshold highlights
+  litThresh('t_rsi20', !isNaN(rsiV) && rsiV < 20);
+  litThresh('t_rsi10', !isNaN(rsiV) && rsiV < 10);
+  litThresh('t_rsi5',  !isNaN(rsiV) && rsiV < 5);
+  litThresh('t_ma_above',  !isNaN(maDistPct) && maDistPct >= 0);
+  litThresh('t_ma_0_5',    !isNaN(maDistPct) && maDistPct < 0 && maDistPct >= -5);
+  litThresh('t_ma_5_10',   !isNaN(maDistPct) && maDistPct < -5 && maDistPct >= -10);
+  litThresh('t_ma_10_20',  !isNaN(maDistPct) && maDistPct < -10 && maDistPct >= -20);
+  litThresh('t_ma_deep',   !isNaN(maDistPct) && maDistPct < -20);
+  litThresh('t_vol15', !isNaN(volV) && volV >= 1.5);
+  litThresh('t_vol20', !isNaN(volV) && volV >= 2.0);
+  litThresh('t_z15',  !isNaN(zV) && zV <= -1.5);
+  litThresh('t_z20',  !isNaN(zV) && zV <= -2.0);
+  litThresh('t_z30',  !isNaN(zV) && zV <= -3.0);
+  litThresh('t_atr15',  !isNaN(atrV) && atrV >= 1.5);
+  litThresh('t_atr165', !isNaN(atrV) && atrV >= 1.65);
+  litThresh('t_atr20',  !isNaN(atrV) && atrV >= 2.0);
+  litThresh('t_osc95', !isNaN(oscV) && oscV >= 0.95);
+  litThresh('t_osc85', !isNaN(oscV) && oscV >= 0.85 && oscV < 0.95);
+  litThresh('t_osc_low',!isNaN(oscV) && oscV < 0.85);
+  litThresh('t_pc123', !isNaN(pcV) && pcV >= 1.23);
+  litThresh('t_pc15',  !isNaN(pcV) && pcV >= 1.50);
+  litThresh('t_vix30', !isNaN(vixV) && vixV >= 30);
+  litThresh('t_vix45', !isNaN(vixV) && vixV >= 45);
+  litThresh('t_vix_spike', !isNaN(vixV) && !isNaN(vixAvg) && vixAvg > 0 && vixV/vixAvg >= 1.5);
+  litThresh('t_ins0', !isNaN(insiderV) && insiderV === 0);
+  litThresh('t_ins1', !isNaN(insiderV) && insiderV === 1);
+  litThresh('t_ins2', !isNaN(insiderV) && insiderV === 2);
+  litThresh('t_ins3', !isNaN(insiderV) && insiderV >= 3);
+
+  // Card firing state
+  [['rsi',bRSI],['ma',bMA.pts],['vol',bVol],['z',bZ],['atr',bATR],['osc',bOsc],['pc',bPC],['vix',bVIX],['insider',bInsider]].forEach(([id,pts])=>{
+    const c = document.getElementById('card_'+id);
+    if(c) pts > 0 ? c.classList.add('firing') : c.classList.remove('firing');
+  });
+
+  // Score chips
+  setChip('rsi', !isNaN(rsiV)?rsiV.toFixed(1):'—', wRSI, SMAXES.rsi*w.rsi);
+  setChip('ma',  !isNaN(maDistPct)?maDistPct.toFixed(1)+'%':'—', wMA, SMAXES.ma*w.ma);
+  setChip('vol', !isNaN(volV)?volV.toFixed(1)+'×':'—', wVol, SMAXES.vol*w.vol);
+  setChip('z',   !isNaN(zV)?zV.toFixed(2):'—', wZ, SMAXES.z*w.z);
+  setChip('atr', !isNaN(atrV)?atrV.toFixed(2)+'×':'—', wATR, SMAXES.atr*w.atr);
+  setChip('osc', !isNaN(oscV)?oscV.toFixed(3):'—', wOsc, SMAXES.osc*w.osc);
+  setChip('pc',  !isNaN(pcV)?pcV.toFixed(2):'—', wPC, SMAXES.pc*w.pc);
+  setChip('vix', !isNaN(vixV)?vixV.toFixed(1):'—', wVIX, SMAXES.vix*w.vix);
+  setChip('insider', !isNaN(insiderV)&&insiderV>=0?insiderV+' buyer'+(insiderV!==1?'s':''):'—', wInsider, SMAXES.insider*w.insider);
+
+  // Score bar
+  const scoreDisp = normScore > 0 ? normScore.toFixed(1) : '—';
+  document.getElementById('out_score').textContent = scoreDisp;
+  document.getElementById('scoreBar').style.width = (normScore/10*100)+'%';
+  let scoreLbl = 'Enter signal values above';
+  if(normScore >= 8) scoreLbl = 'High conviction — strong setup';
+  else if(normScore >= 6) scoreLbl = 'Solid — good signal confluence';
+  else if(normScore >= 4) scoreLbl = 'Moderate — partial deployment';
+  else if(normScore > 0)  scoreLbl = 'Weak — consider waiting';
+  document.getElementById('out_scoreLbl').textContent = scoreLbl;
+
+  // ══ RESULTS ══
+  document.getElementById('res_hpLabel').textContent = hp.tag;
+  document.getElementById('res_score').textContent = normScore > 0 ? normScore.toFixed(1) : '—';
+  document.getElementById('res_scoreLbl').textContent = normScore >= 7 ? 'High conviction' : normScore >= 5 ? 'Moderate' : normScore >= 3 ? 'Low conviction' : 'Insufficient';
+  document.getElementById('res_deploy').textContent = tierIdx >= 0 ? Math.round(deployPct*100)+'%' : '—';
+  document.getElementById('res_deployLbl').textContent = deployLbl + (gateMult < 1 ? ' (gate adj.)' : '');
+  document.getElementById('res_amount').textContent = tierIdx >= 0 && finalAmt > 0 ? fmt$(finalAmt) : (tierIdx >= 0 ? 'SKIP' : '—');
+  document.getElementById('res_amountSub').textContent = scaledAmt > 0 ? 'Base tier: '+fmt$(scaledAmt) : 'Select category & enter size';
+
+  const badge = document.getElementById('res_badge');
+  const notice = document.getElementById('res_notice');
+  const gateNote = document.getElementById('res_gateNote');
+  badge.className = 'status-badge'; notice.style.display='none'; gateNote.textContent='';
+
+  if(tierIdx < 0 && ddPct != null && interval){
+    badge.className='status-badge badge-skip'; badge.textContent='⏳ Not triggered — watching price';
+    notice.style.display='block'; notice.className='notice n-info';
+    notice.innerHTML=`<strong>Next trigger:</strong> drawdown needs to reach <strong>${interval.toFixed(1)}%</strong>. Current: <strong>–${ddPct.toFixed(1)}%</strong>. Price must fall to <strong>${recHigh > 0 ? fmt$(recHigh*(1-interval/100)) : '—'}</strong> to fire Tier 1.`;
+  } else if(tierIdx >= 0 && deployPct === 0){
+    badge.className='status-badge badge-wait'; badge.textContent='✗ Skip — score too low';
+    notice.style.display='block'; notice.className='notice n-warn';
+    notice.innerHTML=`<strong>Score ${normScore.toFixed(1)}/10</strong> is below the minimum threshold for ${hp.label} strategy. Wait for additional confirming signals.`;
+  } else if(belowFloor){
+    badge.className='status-badge badge-wait'; badge.textContent='⚠ Hold — would breach cash floor';
+    notice.style.display='block'; notice.className='notice n-err';
+    notice.innerHTML=`<strong>Cash floor warning:</strong> This purchase would leave ${fmt$(cashAfter)}, below your floor of ${fmt$(bsFloor)}. Reduce buy amount or skip.`;
+  } else if(tierIdx >= 0 && deployPct > 0){
+    if(gateMult < 0.5){
+      badge.className='status-badge badge-partial'; badge.textContent='⚡ Reduced buy — deep below MA';
+      gateNote.textContent = 'Gate: '+gateZone+' — size reduced to '+Math.round(gateMult*100)+'%';
+    } else if(gateMult < 1.0){
+      badge.className='status-badge badge-partial'; badge.textContent='→ Partial buy — below 200-MA';
+      gateNote.textContent = 'Gate: '+gateZone+' — size reduced to '+Math.round(gateMult*100)+'%';
+    } else if(deployPct >= 1.0){
+      badge.className='status-badge badge-go'; badge.textContent='✓ Buy — full conviction';
+    } else {
+      badge.className='status-badge badge-partial'; badge.textContent='→ Partial buy — '+Math.round(deployPct*100)+'%';
+    }
+    if(cashAfter != null){
+      notice.style.display='block'; notice.className='notice n-ok';
+      notice.innerHTML=`<strong>Buy ${fmt$(finalAmt)}</strong> of <strong>${ticker}</strong> (${hp.label} strategy). Cash remaining: ${fmt$(cashAfter)}.`;
+    }
+  } else {
+    badge.className='status-badge badge-skip'; badge.textContent='— Fill in required fields —';
+  }
+
+  // Summary rows
+  document.getElementById('s_ticker').textContent = ticker;
+  document.getElementById('s_cat').textContent = category ? TIERS[category].label : '—';
+  document.getElementById('s_strategy').textContent = hp.tag;
+  document.getElementById('s_price').textContent = curPrice > 0 ? fmt$(curPrice) : '—';
+  document.getElementById('s_dd').textContent = ddPct != null ? '–'+ddPct.toFixed(2)+'%' : '—';
+  document.getElementById('s_gate').textContent = !isNaN(maDistPct) ? Math.round(gateMult*100)+'% ('+gateZone+')' : '—';
+  document.getElementById('s_maxpos').textContent = portSize > 0 ? fmt$(portSize*hp.maxPosMult)+' ('+Math.round(hp.maxPosMult*100)+'%)' : '—';
+  document.getElementById('s_cashafter').textContent = cashAfter != null && finalAmt > 0 ? fmt$(cashAfter) : '—';
+  document.getElementById('s_floor').textContent = cashAfter != null && finalAmt > 0 ? (belowFloor ? '⚠ NO — below floor!' : '✓ Yes') : '—';
+
+  // Next trigger
+  if(category && interval && recHigh > 0){
+    const td = TIERS[category]; let nxt = null;
+    for(let i=0;i<td.intervals.length;i++) if(ddPct==null||ddPct<td.intervals[i]){nxt=td.intervals[i];break;}
+    document.getElementById('s_next').textContent = nxt ? fmt$(recHigh*(1-nxt/100))+' (–'+nxt+'%)' : 'All tiers passed';
+  } else document.getElementById('s_next').textContent = '—';
+
+  // Tier table
+  updateTierTable(category, portSize, ddPct, tierIdx);
+  document.getElementById('res_catLabel').textContent = category ? TIERS[category].label : 'Select category above';
+}
+
+function updateTierTable(cat, portSize, ddPct, activeIdx){
+  const tb = document.getElementById('tierBody');
+  if(!cat || portSize <= 0){
+    tb.innerHTML = '<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:16px;">Select category and enter portfolio size</td></tr>';
+    return;
+  }
+  const td = TIERS[cat]; const scale = portSize/REF; let html='';
+  td.intervals.forEach((pct,i)=>{
+    const sc = Math.round(td.amounts[i]*scale);
+    const passed = ddPct!=null && ddPct > pct && i < activeIdx;
+    const active = i===activeIdx;
+    const cls = active ? 'active' : passed ? 'passed' : '';
+    const st = active ? '◉ TRIGGERED' : passed ? '✓ passed' : '○ watching';
+    html += `<tr class="${cls}"><td>T${i+1}</td><td>–${pct}%</td><td>$${td.amounts[i].toLocaleString()}</td><td>$${sc.toLocaleString()}</td><td>${st}</td></tr>`;
+  });
+  tb.innerHTML = html;
+}
+
+function resetAll(){
+  document.querySelectorAll('input[type=number],input[type=text]').forEach(el=>el.value='');
+  document.querySelectorAll('select').forEach(el=>el.value='');
+  document.getElementById('catResult').style.display='none';
+  document.getElementById('catBadge').textContent='Dividend / Blue Chip / Growth';
+  calc();
+}
+
+// Init
+onHPChange();
+</script>
+</body>
+</html>
